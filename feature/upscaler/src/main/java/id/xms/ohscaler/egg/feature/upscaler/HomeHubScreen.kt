@@ -84,7 +84,7 @@ import id.xms.ohscaler.egg.core.designsystem.LightTextMuted
 import id.xms.ohscaler.egg.core.designsystem.LightTextPrimary
 import id.xms.ohscaler.egg.core.designsystem.LightTextSecondary
 import id.xms.ohscaler.egg.core.storage.ImageDecoderHelper
-import id.xms.ohscaler.egg.core.ui.DribbbleHeroCard
+import id.xms.ohscaler.egg.core.ui.HeroShowcaseCarousel
 import id.xms.ohscaler.egg.core.ui.DribbbleToolCard
 import id.xms.ohscaler.egg.core.ui.EmptyCreationsCard
 import id.xms.ohscaler.egg.core.ui.FloatingCapsuleDock
@@ -235,10 +235,17 @@ fun HomeHubScreen(
                 // Content Tab 0: Enhance (Home Hub)
                 // ================================================================
                 if (selectedTopTab == 0) {
-                    // Featured Hero Card (Frosted Glass & Ambient Glow)
-                    DribbbleHeroCard(
+                    // Featured Hero Showcase Carousel with Before/After Split Comparisons
+                    HeroShowcaseCarousel(
                         isEngineReady = uiState.isEngineReady,
-                        onSelectPhoto = onQuickPick,
+                        onSelectFeatureIndex = { index ->
+                            val feature = when (index) {
+                                0 -> FeatureMode.SuperResolution
+                                1 -> FeatureMode.DeblurRestore
+                                else -> FeatureMode.ProStudio
+                            }
+                            onSelectFeature(feature)
+                        },
                         isDarkTheme = isDarkTheme
                     )
 

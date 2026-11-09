@@ -15,6 +15,8 @@ import id.xms.ohscaler.egg.core.storage.AppPreferences
 import id.xms.ohscaler.egg.core.storage.AppThemeMode
 import id.xms.ohscaler.egg.core.storage.ImageDecoderHelper
 import id.xms.ohscaler.egg.core.storage.ScopedStorageManager
+import id.xms.ohscaler.egg.core.storage.UpscaleCheckpoint
+import id.xms.ohscaler.egg.core.storage.UpscaleRecoveryManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,6 +30,7 @@ enum class ScreenState {
     Onboarding,
     HomeHub,
     StudioWorkspace,
+    Processing,
     ResultPreview
 }
 
@@ -86,13 +89,16 @@ data class UpscalerUiState(
     val exportFormat: ExportFormat = ExportFormat.PNG,
     val exportQuality: Int = 95,
     // Pro Studio tab
-    val proStudioTab: ProStudioTab = ProStudioTab.ScaleAndModel
+    val proStudioTab: ProStudioTab = ProStudioTab.ScaleAndModel,
+    // Crash Recovery Checkpoint
+    val pendingCheckpoint: UpscaleCheckpoint? = null
 )
 
 class UpscalerViewModel(application: Application) : AndroidViewModel(application) {
 
     private val preferences = AppPreferences(application)
     private val storageManager = ScopedStorageManager(application)
+    private val recoveryManager = UpscaleRecoveryManager(application)
     private val onnxEngine = OnnxUpscalerEngine(
         fallbackEngine = FallbackUpscalerEngine()
     )
@@ -110,6 +116,63 @@ class UpscalerViewModel(application: Application) : AndroidViewModel(application
     init {
         loadModelAsync()
         loadRecentCreations()
+        checkPendingRecovery()
+    }
+
+    private fun checkPendingRecovery() {
+        viewModelScope.launch {
+            val checkpoint = recoveryManager.getPendingCheckpoint()
+            if (checkpoint != null) {
+                _uiState.update { it.copy(pendingCheckpoint = checkpoint) }
+            }
+        }
+    }
+
+    fun resumeCheckpoint(checkpoint: UpscaleCheckpoint) {
+        viewModelScope.launch {
+            try {
+                val uri = Uri.parse(checkpoint.sourceUriString)
+                val bitmap = ImageDecoderHelper.decodeBitmapFromUri(getApplication(), uri)
+                val mode = when (checkpoint.featureMode) {
+                    "DeblurRestore" -> FeatureMode.DeblurRestore
+                    "ProStudio" -> FeatureMode.ProStudio
+                    else -> FeatureMode.SuperResolution
+                }
+                val exportFmt = when (checkpoint.exportFormat) {
+                    "WEBP" -> ExportFormat.WEBP
+                    "JPEG" -> ExportFormat.JPEG
+                    else -> ExportFormat.PNG
+                }
+
+                _uiState.update {
+                    it.copy(
+                        sourceUri = uri,
+                        sourceBitmap = bitmap,
+                        activeFeatureMode = mode,
+                        scaleFactor = checkpoint.scaleFactor,
+                        sharpness = checkpoint.sharpness,
+                        antiAliasing = checkpoint.antiAliasing,
+                        deblurRadius = checkpoint.deblurRadius,
+                        clarityStrength = checkpoint.clarityStrength,
+                        faceAwareEnabled = checkpoint.faceAwareEnabled,
+                        antiHaloClamp = checkpoint.antiHaloClamp,
+                        preDeblurEnabled = checkpoint.preDeblurEnabled,
+                        exportFormat = exportFmt,
+                        exportQuality = checkpoint.exportQuality,
+                        pendingCheckpoint = null
+                    )
+                }
+                startUpscale()
+            } catch (e: Exception) {
+                android.util.Log.e("OHScaler", "Error resuming checkpoint", e)
+                discardCheckpoint()
+            }
+        }
+    }
+
+    fun discardCheckpoint() {
+        recoveryManager.clearCheckpoint()
+        _uiState.update { it.copy(pendingCheckpoint = null) }
     }
 
     private fun loadModelAsync() {
@@ -343,6 +406,29 @@ class UpscalerViewModel(application: Application) : AndroidViewModel(application
             "startUpscale called! bitmap=${bitmap.width}x${bitmap.height}, config=$config"
         )
 
+        // Save persistent recovery checkpoint before starting
+        val uriStr = _uiState.value.sourceUri?.toString() ?: ""
+        if (uriStr.isNotEmpty()) {
+            recoveryManager.saveCheckpoint(
+                UpscaleCheckpoint(
+                    sourceUriString = uriStr,
+                    scaleFactor = config.scaleFactor,
+                    sharpness = config.sharpness,
+                    antiAliasing = config.antiAliasing,
+                    deblurRadius = config.deblurRadius,
+                    clarityStrength = config.clarityStrength,
+                    faceAwareEnabled = config.faceAwareEnabled,
+                    antiHaloClamp = config.antiHaloClamp,
+                    preDeblurEnabled = config.preDeblurEnabled,
+                    exportFormat = config.exportFormat.name,
+                    exportQuality = config.exportQuality,
+                    featureMode = _uiState.value.activeFeatureMode.name
+                )
+            )
+        }
+
+        _uiState.update { it.copy(currentScreen = ScreenState.Processing) }
+
         upscaleJob?.cancel()
         upscaleJob = viewModelScope.launch {
             try {
@@ -351,8 +437,13 @@ class UpscalerViewModel(application: Application) : AndroidViewModel(application
                     config = config,
                     onProgress = { progress ->
                         _uiState.update { it.copy(progress = progress) }
+                        if (progress is UpscaleProgress.Processing) {
+                            recoveryManager.updateTileProgress(progress.currentTile, progress.totalTiles)
+                        }
                     }
                 )
+                // Completed successfully: clear checkpoint
+                recoveryManager.clearCheckpoint()
                 _uiState.update {
                     it.copy(
                         upscaledBitmap = result,
@@ -361,8 +452,12 @@ class UpscalerViewModel(application: Application) : AndroidViewModel(application
                     )
                 }
             } catch (e: Exception) {
+                recoveryManager.clearCheckpoint()
                 _uiState.update {
-                    it.copy(progress = UpscaleProgress.Error(e.localizedMessage ?: "Unknown error", e))
+                    it.copy(
+                        progress = UpscaleProgress.Error(e.localizedMessage ?: "Unknown error", e),
+                        currentScreen = ScreenState.StudioWorkspace
+                    )
                 }
             }
         }
@@ -371,7 +466,13 @@ class UpscalerViewModel(application: Application) : AndroidViewModel(application
     fun cancelUpscale() {
         upscaleJob?.cancel()
         upscaleJob = null
-        _uiState.update { it.copy(progress = UpscaleProgress.Idle) }
+        recoveryManager.clearCheckpoint()
+        _uiState.update {
+            it.copy(
+                progress = UpscaleProgress.Idle,
+                currentScreen = ScreenState.StudioWorkspace
+            )
+        }
     }
 
     fun saveUpscaledImage(onResult: (Boolean) -> Unit) {
