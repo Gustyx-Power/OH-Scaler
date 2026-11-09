@@ -22,24 +22,23 @@ class FallbackUpscalerEngine(
 
     override suspend fun upscale(
         sourceBitmap: Bitmap,
-        scaleFactor: Int,
-        enhancementMode: EnhancementMode,
+        config: TuningConfig,
         onProgress: (UpscaleProgress) -> Unit
     ): Bitmap = withContext(Dispatchers.Default) {
         val startTime = System.currentTimeMillis()
 
         onProgress(UpscaleProgress.ReadingPixels(sourceBitmap.width, sourceBitmap.height))
-        delay(80) // Small yield for UI smoothness
+        delay(60)
 
         val result = tileProcessor.processTiled(
             sourceBitmap = sourceBitmap,
-            scaleFactor = scaleFactor,
+            scaleFactor = config.scaleFactor,
             onProgress = { current, total, progress ->
                 onProgress(UpscaleProgress.Processing(current, total, progress))
             },
             transformTile = { tile ->
-                val outW = tile.width * scaleFactor
-                val outH = tile.height * scaleFactor
+                val outW = (tile.width * config.scaleFactor).toInt().coerceAtLeast(1)
+                val outH = (tile.height * config.scaleFactor).toInt().coerceAtLeast(1)
                 val scaledTile = Bitmap.createBitmap(outW, outH, Bitmap.Config.ARGB_8888)
                 val canvas = Canvas(scaledTile)
                 val paint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
@@ -48,8 +47,12 @@ class FallbackUpscalerEngine(
                 val dstRect = Rect(0, 0, outW, outH)
                 canvas.drawBitmap(tile, srcRect, dstRect, paint)
 
-                if (enhancementMode == EnhancementMode.UltraDeblur) {
-                    val enhanced = ImageEnhancer.applyAdaptiveDeblur(scaledTile)
+                if (config.sharpness > 0.05f || config.antiAliasing > 0.05f) {
+                    val enhanced = ImageEnhancer.applyDetailTuning(
+                        bitmap = scaledTile,
+                        sharpness = config.sharpness,
+                        antiAliasing = config.antiAliasing
+                    )
                     if (enhanced != scaledTile && !scaledTile.isRecycled) {
                         scaledTile.recycle()
                     }

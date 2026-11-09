@@ -12,7 +12,7 @@ import kotlin.coroutines.coroutineContext
 
 /**
  * OnnxUpscalerEngine runs super-resolution models (e.g. Real-ESRGAN Compact v3)
- * on Android hardware accelerators via ONNX Runtime Mobile and NNAPI / CPU XNNPACK.
+ * on Android hardware accelerators via ONNX Runtime Mobile and CPU SIMD (NEON/AVX2).
  */
 class OnnxUpscalerEngine(
     private var modelBytes: ByteArray? = null,
@@ -68,8 +68,7 @@ class OnnxUpscalerEngine(
 
     override suspend fun upscale(
         sourceBitmap: Bitmap,
-        scaleFactor: Int,
-        enhancementMode: EnhancementMode,
+        config: TuningConfig,
         onProgress: (UpscaleProgress) -> Unit
     ): Bitmap = withContext(Dispatchers.Default) {
         val session = ortSession
@@ -77,36 +76,43 @@ class OnnxUpscalerEngine(
 
         if (session == null || env == null) {
             // Gracefully use fallback engine if model is not yet loaded
-            return@withContext fallbackEngine.upscale(sourceBitmap, scaleFactor, enhancementMode, onProgress)
+            return@withContext fallbackEngine.upscale(sourceBitmap, config, onProgress)
         }
 
         val startTime = System.currentTimeMillis()
-        android.util.Log.d("OHScaler", "OnnxUpscalerEngine.upscale starting! ${sourceBitmap.width}x${sourceBitmap.height}, scale=$scaleFactor, mode=$enhancementMode")
+        android.util.Log.d(
+            "OHScaler",
+            "OnnxUpscalerEngine.upscale starting! ${sourceBitmap.width}x${sourceBitmap.height}, " +
+                    "scale=${config.scaleFactor}x, sharpness=${config.sharpness}, AA=${config.antiAliasing}"
+        )
         onProgress(UpscaleProgress.ReadingPixels(sourceBitmap.width, sourceBitmap.height))
 
         try {
             val result = tileProcessor.processTiled(
                 sourceBitmap = sourceBitmap,
-                scaleFactor = scaleFactor,
+                scaleFactor = config.scaleFactor,
                 onProgress = { current, total, progress ->
                     android.util.Log.d("OHScaler", "Tile progress: $current/$total ($progress)")
                     onProgress(UpscaleProgress.Processing(current, total, progress))
                 },
                 transformTile = { tile ->
                     coroutineContext.ensureActive()
-                    runTileInference(env, session, tile, scaleFactor, enhancementMode)
+                    runTileInference(env, session, tile, config)
                 }
             )
 
             onProgress(UpscaleProgress.Stitching(1.0f))
             val duration = System.currentTimeMillis() - startTime
-            android.util.Log.d("OHScaler", "Neural upscale COMPLETED in ${duration}ms! Result: ${result.width}x${result.height}")
+            android.util.Log.d(
+                "OHScaler",
+                "Neural upscale COMPLETED in ${duration}ms! Result: ${result.width}x${result.height}"
+            )
             onProgress(UpscaleProgress.Completed(result, duration))
             result
         } catch (e: Exception) {
             android.util.Log.e("OHScaler", "Neural inference failed, falling back to bicubic", e)
             onProgress(UpscaleProgress.Error("Neural inference fallback: ${e.localizedMessage}", e))
-            fallbackEngine.upscale(sourceBitmap, scaleFactor, enhancementMode, onProgress)
+            fallbackEngine.upscale(sourceBitmap, config, onProgress)
         }
     }
 
@@ -114,8 +120,7 @@ class OnnxUpscalerEngine(
         env: OrtEnvironment,
         session: OrtSession,
         tile: Bitmap,
-        scaleFactor: Int,
-        enhancementMode: EnhancementMode
+        config: TuningConfig
     ): Bitmap {
         val w = tile.width
         val h = tile.height
@@ -172,10 +177,13 @@ class OnnxUpscalerEngine(
         val rawTile4x = Bitmap.createBitmap(outW, outH, Bitmap.Config.ARGB_8888)
         rawTile4x.setPixels(outPixels, 0, outW, 0, 0, outW, outH)
 
-        // If target scale factor is 2x, downsample the 4x neural output for exceptional anti-aliasing
-        val targetTile = if (scaleFactor == 2) {
-            val targetW = w * 2
-            val targetH = h * 2
+        // Target scaling:
+        // Real-ESRGAN Compact output is 4x.
+        // For scaleFactor != 4.0f (e.g. 1.5x, 2.0x, 3.0x, 8.0x), rescale tile accordingly:
+        val targetW = (w * config.scaleFactor).toInt().coerceAtLeast(1)
+        val targetH = (h * config.scaleFactor).toInt().coerceAtLeast(1)
+
+        val scaledTile = if (targetW != outW || targetH != outH) {
             val scaled = Bitmap.createScaledBitmap(rawTile4x, targetW, targetH, true)
             if (scaled != rawTile4x && !rawTile4x.isRecycled) {
                 rawTile4x.recycle()
@@ -185,15 +193,19 @@ class OnnxUpscalerEngine(
             rawTile4x
         }
 
-        // Apply adaptive edge deblurring if requested for out-of-focus or blurry input
-        return if (enhancementMode == EnhancementMode.UltraDeblur) {
-            val enhanced = ImageEnhancer.applyAdaptiveDeblur(targetTile)
-            if (enhanced != targetTile && !targetTile.isRecycled) {
-                targetTile.recycle()
+        // Apply custom detail tuning (Sharpness + Directional Anti-Aliasing)
+        return if (config.sharpness > 0.01f || config.antiAliasing > 0.01f) {
+            val tuned = ImageEnhancer.applyDetailTuning(
+                bitmap = scaledTile,
+                sharpness = config.sharpness,
+                antiAliasing = config.antiAliasing
+            )
+            if (tuned != scaledTile && !scaledTile.isRecycled) {
+                scaledTile.recycle()
             }
-            enhanced
+            tuned
         } else {
-            targetTile
+            scaledTile
         }
     }
 }

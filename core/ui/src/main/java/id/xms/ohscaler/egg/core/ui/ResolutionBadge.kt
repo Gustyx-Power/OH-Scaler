@@ -26,11 +26,12 @@ import id.xms.ohscaler.egg.core.designsystem.TextPrimary
 fun ResolutionBadge(
     srcWidth: Int,
     srcHeight: Int,
-    scaleFactor: Int,
+    scaleFactor: Float,
     modifier: Modifier = Modifier
 ) {
-    val targetWidth = srcWidth * scaleFactor
-    val targetHeight = srcHeight * scaleFactor
+    val targetWidth = (srcWidth * scaleFactor).toInt()
+    val targetHeight = (srcHeight * scaleFactor).toInt()
+    val scaleLabel = if (scaleFactor % 1f == 0f) "${scaleFactor.toInt()}×" else "${scaleFactor}×"
 
     Row(
         modifier = modifier
@@ -59,7 +60,7 @@ fun ResolutionBadge(
             fontWeight = FontWeight.SemiBold
         )
         Text(
-            text = "${scaleFactor}×",
+            text = scaleLabel,
             color = ElectricVioletLight,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
@@ -69,4 +70,14 @@ fun ResolutionBadge(
                 .padding(horizontal = 6.dp, vertical = 2.dp)
         )
     }
+}
+
+@Composable
+fun ResolutionBadge(
+    srcWidth: Int,
+    srcHeight: Int,
+    scaleFactor: Int,
+    modifier: Modifier = Modifier
+) {
+    ResolutionBadge(srcWidth, srcHeight, scaleFactor.toFloat(), modifier)
 }

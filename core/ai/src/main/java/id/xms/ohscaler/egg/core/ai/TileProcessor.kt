@@ -72,18 +72,18 @@ class TileProcessor(
 
     suspend fun processTiled(
         sourceBitmap: Bitmap,
-        scaleFactor: Int,
+        scaleFactor: Float,
         onProgress: (current: Int, total: Int, progressFloat: Float) -> Unit,
         transformTile: suspend (paddedTile: Bitmap) -> Bitmap
     ): Bitmap {
         val srcWidth = sourceBitmap.width
         val srcHeight = sourceBitmap.height
-        val dstWidth = srcWidth * scaleFactor
-        val dstHeight = srcHeight * scaleFactor
+        val dstWidth = (srcWidth * scaleFactor).toInt().coerceAtLeast(1)
+        val dstHeight = (srcHeight * scaleFactor).toInt().coerceAtLeast(1)
 
         val resultBitmap = Bitmap.createBitmap(dstWidth, dstHeight, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(resultBitmap)
-        val paint = Paint(Paint.FILTER_BITMAP_FLAG)
+        val paint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
 
         val tiles = calculateTiles(srcWidth, srcHeight)
         val totalTiles = tiles.size
@@ -112,15 +112,20 @@ class TileProcessor(
             }
 
             // Crop out scaled padding
-            val cropLeft = tile.padLeft * scaleFactor
-            val cropTop = tile.padTop * scaleFactor
-            val coreW = tile.sourceWidth * scaleFactor
-            val coreH = tile.sourceHeight * scaleFactor
+            val cropLeft = (tile.padLeft * scaleFactor).toInt()
+            val cropTop = (tile.padTop * scaleFactor).toInt()
+            val coreW = (tile.sourceWidth * scaleFactor).toInt()
+            val coreH = (tile.sourceHeight * scaleFactor).toInt()
 
             val srcRect = Rect(cropLeft, cropTop, cropLeft + coreW, cropTop + coreH)
-            val dstX = tile.sourceX * scaleFactor
-            val dstY = tile.sourceY * scaleFactor
-            val dstRect = Rect(dstX, dstY, dstX + coreW, dstY + coreH)
+            val dstX = (tile.sourceX * scaleFactor).toInt()
+            val dstY = (tile.sourceY * scaleFactor).toInt()
+            val dstRect = Rect(
+                dstX,
+                dstY,
+                (dstX + coreW).coerceAtMost(dstWidth),
+                (dstY + coreH).coerceAtMost(dstHeight)
+            )
 
             canvas.drawBitmap(upscaledPaddedTile, srcRect, dstRect, paint)
 
@@ -133,5 +138,19 @@ class TileProcessor(
         }
 
         return resultBitmap
+    }
+
+    suspend fun processTiled(
+        sourceBitmap: Bitmap,
+        scaleFactor: Int,
+        onProgress: (current: Int, total: Int, progressFloat: Float) -> Unit,
+        transformTile: suspend (paddedTile: Bitmap) -> Bitmap
+    ): Bitmap {
+        return processTiled(
+            sourceBitmap = sourceBitmap,
+            scaleFactor = scaleFactor.toFloat(),
+            onProgress = onProgress,
+            transformTile = transformTile
+        )
     }
 }
