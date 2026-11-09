@@ -2,6 +2,8 @@ package id.xms.ohscaler.egg.core.ui
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -32,27 +34,41 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.xms.ohscaler.egg.core.ai.UpscaleProgress
-import id.xms.ohscaler.egg.core.designsystem.BorderDark
-import id.xms.ohscaler.egg.core.designsystem.CyanAccent
-import id.xms.ohscaler.egg.core.designsystem.ElectricViolet
+import id.xms.ohscaler.egg.core.designsystem.DarkBorder
+import id.xms.ohscaler.egg.core.designsystem.DarkGlassBorder
+import id.xms.ohscaler.egg.core.designsystem.DarkGlassSurface
+import id.xms.ohscaler.egg.core.designsystem.DarkPrimary
+import id.xms.ohscaler.egg.core.designsystem.DarkSurfaceContainer
+import id.xms.ohscaler.egg.core.designsystem.DarkSurfaceContainerHigh
+import id.xms.ohscaler.egg.core.designsystem.DarkTextMuted
+import id.xms.ohscaler.egg.core.designsystem.DarkTextPrimary
+import id.xms.ohscaler.egg.core.designsystem.DarkTextSecondary
 import id.xms.ohscaler.egg.core.designsystem.EmeraldSuccess
-import id.xms.ohscaler.egg.core.designsystem.SurfaceDark
-import id.xms.ohscaler.egg.core.designsystem.TextMuted
-import id.xms.ohscaler.egg.core.designsystem.TextPrimary
-import id.xms.ohscaler.egg.core.designsystem.TextSecondary
+import id.xms.ohscaler.egg.core.designsystem.LightBorder
+import id.xms.ohscaler.egg.core.designsystem.LightGlassBorder
+import id.xms.ohscaler.egg.core.designsystem.LightGlassSurface
+import id.xms.ohscaler.egg.core.designsystem.LightPrimary
+import id.xms.ohscaler.egg.core.designsystem.LightSurface
+import id.xms.ohscaler.egg.core.designsystem.LightSurfaceContainerHigh
+import id.xms.ohscaler.egg.core.designsystem.LightTextMuted
+import id.xms.ohscaler.egg.core.designsystem.LightTextPrimary
+import id.xms.ohscaler.egg.core.designsystem.LightTextSecondary
 
 @Composable
 fun ProcessingProgressCard(
     progress: UpscaleProgress,
     onCancel: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isDarkTheme: Boolean = isSystemInDarkTheme()
 ) {
     val currentStep = when (progress) {
         is UpscaleProgress.ReadingPixels -> 1
@@ -76,29 +92,56 @@ fun ProcessingProgressCard(
         label = "progressAnimation"
     )
 
+    val cardBg = if (isDarkTheme) DarkGlassSurface else LightGlassSurface
+    val cardBorder = if (isDarkTheme) DarkGlassBorder else LightGlassBorder
+    val surfaceVar = if (isDarkTheme) DarkSurfaceContainerHigh else LightSurfaceContainerHigh
+    val primaryAccent = if (isDarkTheme) DarkPrimary else LightPrimary
+    val textPrimaryColor = if (isDarkTheme) DarkTextPrimary else LightTextPrimary
+    val textSecondaryColor = if (isDarkTheme) DarkTextSecondary else LightTextSecondary
+    val textMutedColor = if (isDarkTheme) DarkTextMuted else LightTextMuted
+
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .background(SurfaceDark)
-            .border(1.dp, BorderDark, RoundedCornerShape(24.dp))
+            .shadow(16.dp, RoundedCornerShape(26.dp), spotColor = Color(0x40000000))
+            .clip(RoundedCornerShape(26.dp))
+            .background(cardBg)
+            .border(1.dp, cardBorder, RoundedCornerShape(26.dp))
             .padding(24.dp)
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.fillMaxWidth()
         ) {
-            // Header
+            // Header with AI Sparkle
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(surfaceVar)
+                    .border(1.dp, primaryAccent.copy(alpha = 0.5f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(id = id.xms.ohscaler.egg.core.designsystem.R.drawable.ic_ai_sparkle_custom),
+                    contentDescription = null,
+                    tint = androidx.compose.ui.graphics.Color.Unspecified,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
             Text(
                 text = stringResource(id.xms.ohscaler.egg.core.designsystem.R.string.processing_title),
-                color = TextPrimary,
+                color = textPrimaryColor,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = stringResource(id.xms.ohscaler.egg.core.designsystem.R.string.processing_subtitle),
-                color = TextSecondary,
+                color = textSecondaryColor,
                 fontSize = 13.sp
             )
 
@@ -111,8 +154,8 @@ fun ProcessingProgressCard(
                     .fillMaxWidth()
                     .height(8.dp)
                     .clip(RoundedCornerShape(4.dp)),
-                color = ElectricViolet,
-                trackColor = BorderDark
+                color = primaryAccent,
+                trackColor = cardBorder
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -126,7 +169,7 @@ fun ProcessingProgressCard(
                 val percentageInt = (animatedProgress * 100).toInt()
                 Text(
                     text = "$percentageInt%",
-                    color = CyanAccent,
+                    color = primaryAccent,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -138,7 +181,7 @@ fun ProcessingProgressCard(
                             progress.currentTile,
                             progress.totalTiles
                         ),
-                        color = TextMuted,
+                        color = textMutedColor,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -152,28 +195,32 @@ fun ProcessingProgressCard(
                 stepIndex = 1,
                 currentStep = currentStep,
                 title = stringResource(id.xms.ohscaler.egg.core.designsystem.R.string.step_read_pixels),
-                icon = Icons.Rounded.PhotoFilter
+                icon = Icons.Rounded.PhotoFilter,
+                isDarkTheme = isDarkTheme
             )
             Spacer(modifier = Modifier.height(10.dp))
             StepItem(
                 stepIndex = 2,
                 currentStep = currentStep,
                 title = stringResource(id.xms.ohscaler.egg.core.designsystem.R.string.step_ai_inference),
-                icon = Icons.Rounded.Memory
+                icon = Icons.Rounded.Memory,
+                isDarkTheme = isDarkTheme
             )
             Spacer(modifier = Modifier.height(10.dp))
             StepItem(
                 stepIndex = 3,
                 currentStep = currentStep,
                 title = stringResource(id.xms.ohscaler.egg.core.designsystem.R.string.step_stitching),
-                icon = Icons.Rounded.Tune
+                icon = Icons.Rounded.Tune,
+                isDarkTheme = isDarkTheme
             )
             Spacer(modifier = Modifier.height(10.dp))
             StepItem(
                 stepIndex = 4,
                 currentStep = currentStep,
                 title = stringResource(id.xms.ohscaler.egg.core.designsystem.R.string.step_completed),
-                icon = Icons.Rounded.CheckCircle
+                icon = Icons.Rounded.CheckCircle,
+                isDarkTheme = isDarkTheme
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -185,8 +232,8 @@ fun ProcessingProgressCard(
                     .fillMaxWidth()
                     .height(48.dp),
                 shape = RoundedCornerShape(14.dp),
-                border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(BorderDark)),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary)
+                border = BorderStroke(1.dp, cardBorder),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = textSecondaryColor)
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Close,
@@ -208,21 +255,22 @@ private fun StepItem(
     stepIndex: Int,
     currentStep: Int,
     title: String,
-    icon: ImageVector
+    icon: ImageVector,
+    isDarkTheme: Boolean
 ) {
     val isDone = currentStep > stepIndex
     val isCurrent = currentStep == stepIndex
 
     val bgTint = when {
         isDone -> EmeraldSuccess
-        isCurrent -> ElectricViolet
-        else -> BorderDark
+        isCurrent -> if (isDarkTheme) DarkPrimary else LightPrimary
+        else -> if (isDarkTheme) DarkBorder else LightBorder
     }
 
     val textColor = when {
         isDone -> EmeraldSuccess
-        isCurrent -> TextPrimary
-        else -> TextMuted
+        isCurrent -> if (isDarkTheme) DarkTextPrimary else LightTextPrimary
+        else -> if (isDarkTheme) DarkTextMuted else LightTextMuted
     }
 
     Row(
@@ -241,7 +289,7 @@ private fun StepItem(
                 CircularProgressIndicator(
                     modifier = Modifier.size(16.dp),
                     strokeWidth = 2.dp,
-                    color = ElectricViolet
+                    color = if (isDarkTheme) DarkPrimary else LightPrimary
                 )
             } else {
                 Icon(

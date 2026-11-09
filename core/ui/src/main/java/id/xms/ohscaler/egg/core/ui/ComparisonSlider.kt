@@ -7,17 +7,15 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,7 +31,6 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.ClipOp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
@@ -43,25 +40,22 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import id.xms.ohscaler.egg.core.designsystem.BorderDark
-import id.xms.ohscaler.egg.core.designsystem.CyanAccent
-import id.xms.ohscaler.egg.core.designsystem.ElectricViolet
-import id.xms.ohscaler.egg.core.designsystem.GlassOverlay
-import id.xms.ohscaler.egg.core.designsystem.ObsidianBlack
-import id.xms.ohscaler.egg.core.designsystem.TextMuted
-import id.xms.ohscaler.egg.core.designsystem.TextPrimary
+import id.xms.ohscaler.egg.core.designsystem.DarkPrimary
+import id.xms.ohscaler.egg.core.designsystem.LightPrimary
 import kotlin.math.roundToInt
 
 @Composable
 fun ComparisonSlider(
     beforeBitmap: Bitmap,
     afterBitmap: Bitmap,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isDarkTheme: Boolean = isSystemInDarkTheme()
 ) {
     val haptic = LocalHapticFeedback.current
     var sliderRatio by remember { mutableFloatStateOf(0.5f) }
@@ -77,6 +71,7 @@ fun ComparisonSlider(
 
     val beforeImageBitmap = remember(beforeBitmap) { beforeBitmap.asImageBitmap() }
     val afterImageBitmap = remember(afterBitmap) { afterBitmap.asImageBitmap() }
+    val dividerColor = if (isDarkTheme) DarkPrimary else LightPrimary
 
     BoxWithConstraints(
         modifier = modifier
@@ -104,7 +99,7 @@ fun ComparisonSlider(
             val canvasWidth = size.width
             val canvasHeight = size.height
 
-            // Calculate destination rect to maintain aspect ratio (CenterCrop / Fit)
+            // Calculate destination rect to maintain aspect ratio (Fit)
             val imgAspect = afterBitmap.width.toFloat() / afterBitmap.height.toFloat()
             val canvasAspect = canvasWidth / canvasHeight
 
@@ -128,7 +123,7 @@ fun ComparisonSlider(
             val imgDstSize = Size(dstWidth, dstHeight)
             val imgDstOffset = Offset(dstX, dstY)
 
-            // 1. Draw "Before" Image on the left half (clipped to [0, dividerX])
+            // 1. Draw "Before" Image on left half
             val leftClipPath = Path().apply {
                 addRect(Rect(0f, 0f, dividerX, canvasHeight))
             }
@@ -140,7 +135,7 @@ fun ComparisonSlider(
                 )
             }
 
-            // 2. Draw "After" Image on the right half (clipped to [dividerX, canvasWidth])
+            // 2. Draw "After" Image on right half
             val rightClipPath = Path().apply {
                 addRect(Rect(dividerX, 0f, canvasWidth, canvasHeight))
             }
@@ -154,26 +149,25 @@ fun ComparisonSlider(
 
             // 3. Draw Divider Line
             drawLine(
-                color = ElectricViolet,
+                color = dividerColor,
                 start = Offset(dividerX, 0f),
                 end = Offset(dividerX, canvasHeight),
                 strokeWidth = 3.dp.toPx()
             )
         }
 
-        // Floating Tags: "BEFORE" on left, "AFTER" on right
+        // Floating Glass Tags: "ORIGINAL" on left, "OH-SCALED" on right
         Box(
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(16.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(GlassOverlay)
-                .border(1.dp, BorderDark, RoundedCornerShape(8.dp))
-                .padding(horizontal = 10.dp, vertical = 6.dp)
+                .clip(CircleShape)
+                .background(Color(0xB3000000))
+                .padding(horizontal = 12.dp, vertical = 6.dp)
         ) {
             Text(
                 text = stringResource(id.xms.ohscaler.egg.core.designsystem.R.string.tag_before),
-                color = TextMuted,
+                color = Color(0xFFE0DFEA),
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -183,14 +177,13 @@ fun ComparisonSlider(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(16.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(GlassOverlay)
-                .border(1.dp, CyanAccent.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                .padding(horizontal = 10.dp, vertical = 6.dp)
+                .clip(CircleShape)
+                .background(dividerColor.copy(alpha = 0.85f))
+                .padding(horizontal = 12.dp, vertical = 6.dp)
         ) {
             Text(
                 text = stringResource(id.xms.ohscaler.egg.core.designsystem.R.string.tag_after),
-                color = CyanAccent,
+                color = Color.White,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -209,8 +202,8 @@ fun ComparisonSlider(
                 .offset { IntOffset(handleOffsetX.roundToInt(), (containerHeight / 2f - handleSizePx / 2f).roundToInt()) }
                 .size(handleSize)
                 .clip(CircleShape)
-                .background(ObsidianBlack)
-                .border(2.dp, ElectricViolet, CircleShape)
+                .background(if (isDarkTheme) Color(0xFF151821) else Color(0xFFFFFFFF))
+                .border(2.dp, dividerColor, CircleShape)
                 .pointerInput(containerWidth) {
                     detectHorizontalDragGestures { change, dragAmount ->
                         change.consume()
@@ -228,9 +221,9 @@ fun ComparisonSlider(
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = Icons.AutoMirrored.Filled.CompareArrows,
+                painter = painterResource(id = id.xms.ohscaler.egg.core.designsystem.R.drawable.ic_split_compare),
                 contentDescription = stringResource(id.xms.ohscaler.egg.core.designsystem.R.string.desc_drag_slider),
-                tint = TextPrimary,
+                tint = Color.Unspecified,
                 modifier = Modifier.size(24.dp)
             )
         }
