@@ -2,9 +2,11 @@ package id.xms.ohscaler.egg.core.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -15,58 +17,72 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import id.xms.ohscaler.egg.core.designsystem.BorderDark
-import id.xms.ohscaler.egg.core.designsystem.CyanAccent
-import id.xms.ohscaler.egg.core.designsystem.ElectricVioletLight
-import id.xms.ohscaler.egg.core.designsystem.SurfaceVariantDark
-import id.xms.ohscaler.egg.core.designsystem.TextMuted
-import id.xms.ohscaler.egg.core.designsystem.TextPrimary
+import id.xms.ohscaler.egg.core.designsystem.DarkGlassBorder
+import id.xms.ohscaler.egg.core.designsystem.DarkGlassSurface
+import id.xms.ohscaler.egg.core.designsystem.DarkPrimary
+import id.xms.ohscaler.egg.core.designsystem.DarkTextMuted
+import id.xms.ohscaler.egg.core.designsystem.DarkTextPrimary
+import id.xms.ohscaler.egg.core.designsystem.LightGlassBorder
+import id.xms.ohscaler.egg.core.designsystem.LightGlassSurface
+import id.xms.ohscaler.egg.core.designsystem.LightPrimary
+import id.xms.ohscaler.egg.core.designsystem.LightTextMuted
+import id.xms.ohscaler.egg.core.designsystem.LightTextPrimary
+import java.util.Locale
 
 @Composable
 fun ResolutionBadge(
     srcWidth: Int,
     srcHeight: Int,
     scaleFactor: Float,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isDarkTheme: Boolean = isSystemInDarkTheme()
 ) {
     val targetWidth = (srcWidth * scaleFactor).toInt()
     val targetHeight = (srcHeight * scaleFactor).toInt()
+    val mp = (targetWidth.toLong() * targetHeight.toLong()) / 1_000_000.0
     val scaleLabel = if (scaleFactor % 1f == 0f) "${scaleFactor.toInt()}×" else "${scaleFactor}×"
+    val mpLabel = String.format(Locale.US, "%.1f MP", mp)
+
+    val badgeBg = if (isDarkTheme) DarkGlassSurface else LightGlassSurface
+    val badgeBorder = if (isDarkTheme) DarkGlassBorder else LightGlassBorder
+    val primaryText = if (isDarkTheme) DarkTextPrimary else LightTextPrimary
+    val mutedText = if (isDarkTheme) DarkTextMuted else LightTextMuted
+    val accentTagColor = if (isDarkTheme) DarkPrimary else LightPrimary
 
     Row(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(SurfaceVariantDark)
-            .border(1.dp, BorderDark, RoundedCornerShape(12.dp))
-            .padding(horizontal = 14.dp, vertical = 8.dp),
+            .clip(CircleShape)
+            .background(badgeBg)
+            .border(1.dp, badgeBorder, CircleShape)
+            .padding(horizontal = 14.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
             text = "${srcWidth}×${srcHeight}",
-            color = TextMuted,
-            fontSize = 13.sp,
+            color = mutedText,
+            fontSize = 12.sp,
             fontWeight = FontWeight.Medium
         )
         Text(
             text = "➔",
-            color = CyanAccent,
-            fontSize = 12.sp
+            color = accentTagColor,
+            fontSize = 11.sp
         )
         Text(
             text = "${targetWidth}×${targetHeight}",
-            color = TextPrimary,
-            fontSize = 13.sp,
+            color = primaryText,
+            fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold
         )
         Text(
-            text = scaleLabel,
-            color = ElectricVioletLight,
-            fontSize = 12.sp,
+            text = "$scaleLabel • $mpLabel",
+            color = accentTagColor,
+            fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier
                 .clip(RoundedCornerShape(6.dp))
-                .background(Color(0x337C3AED))
+                .background(accentTagColor.copy(alpha = 0.15f))
                 .padding(horizontal = 6.dp, vertical = 2.dp)
         )
     }
