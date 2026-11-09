@@ -2,7 +2,10 @@ package id.xms.ohscaler.egg.feature.upscaler
 
 import android.graphics.Bitmap
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,26 +28,38 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import id.xms.ohscaler.egg.core.designsystem.BorderDark
-import id.xms.ohscaler.egg.core.designsystem.CyanAccent
-import id.xms.ohscaler.egg.core.designsystem.ElectricViolet
+import androidx.compose.ui.draw.shadow
+import id.xms.ohscaler.egg.core.designsystem.DarkBorder
+import id.xms.ohscaler.egg.core.designsystem.DarkGlassBorder
+import id.xms.ohscaler.egg.core.designsystem.DarkGlassSurface
+import id.xms.ohscaler.egg.core.designsystem.DarkPrimary
+import id.xms.ohscaler.egg.core.designsystem.DarkSurfaceContainer
+import id.xms.ohscaler.egg.core.designsystem.DarkSurfaceContainerLow
+import id.xms.ohscaler.egg.core.designsystem.DarkTextMuted
+import id.xms.ohscaler.egg.core.designsystem.DarkTextPrimary
+import id.xms.ohscaler.egg.core.designsystem.DarkTextSecondary
 import id.xms.ohscaler.egg.core.designsystem.EmeraldSuccess
-import id.xms.ohscaler.egg.core.designsystem.ObsidianBlack
-import id.xms.ohscaler.egg.core.designsystem.SurfaceDark
-import id.xms.ohscaler.egg.core.designsystem.TextMuted
-import id.xms.ohscaler.egg.core.designsystem.TextPrimary
-import id.xms.ohscaler.egg.core.designsystem.TextSecondary
+import id.xms.ohscaler.egg.core.designsystem.LightBorder
+import id.xms.ohscaler.egg.core.designsystem.LightGlassBorder
+import id.xms.ohscaler.egg.core.designsystem.LightGlassSurface
+import id.xms.ohscaler.egg.core.designsystem.LightPrimary
+import id.xms.ohscaler.egg.core.designsystem.LightSurfaceContainerLow
+import id.xms.ohscaler.egg.core.designsystem.LightTextMuted
+import id.xms.ohscaler.egg.core.designsystem.LightTextPrimary
+import id.xms.ohscaler.egg.core.designsystem.LightTextSecondary
 import id.xms.ohscaler.egg.core.ui.ComparisonSlider
 import id.xms.ohscaler.egg.core.ui.ResolutionBadge
 
@@ -56,18 +71,27 @@ fun ResultScreen(
     isSaving: Boolean,
     onSave: ((Boolean) -> Unit) -> Unit,
     onReset: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isDarkTheme: Boolean = isSystemInDarkTheme()
 ) {
     val context = LocalContext.current
     val savedToastMsg = stringResource(id.xms.ohscaler.egg.core.designsystem.R.string.action_saved)
     val failedToastMsg = stringResource(id.xms.ohscaler.egg.core.designsystem.R.string.action_save_failed)
 
+    val glassBg = if (isDarkTheme) DarkGlassSurface else LightGlassSurface
+    val glassBorder = if (isDarkTheme) DarkGlassBorder else LightGlassBorder
+    val textPrimary = if (isDarkTheme) DarkTextPrimary else LightTextPrimary
+    val textSecondary = if (isDarkTheme) DarkTextSecondary else LightTextSecondary
+    val textMuted = if (isDarkTheme) DarkTextMuted else LightTextMuted
+    val sliderBg = if (isDarkTheme) DarkSurfaceContainer else LightSurfaceContainerLow
+    val primaryAccent = if (isDarkTheme) DarkPrimary else LightPrimary
+
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(ObsidianBlack)
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        // Top Bar
+        // Floating Top Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -77,34 +101,43 @@ fun ResultScreen(
         ) {
             IconButton(
                 onClick = onReset,
-                modifier = Modifier.size(44.dp)
+                modifier = Modifier
+                    .shadow(if (isDarkTheme) 0.dp else 4.dp, RoundedCornerShape(12.dp), spotColor = Color(0x1F1E293B))
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(glassBg)
+                    .border(1.dp, glassBorder, RoundedCornerShape(12.dp))
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = null,
-                    tint = TextPrimary
+                    tint = textPrimary,
+                    modifier = Modifier.size(20.dp)
                 )
             }
 
             ResolutionBadge(
                 srcWidth = sourceBitmap.width,
                 srcHeight = sourceBitmap.height,
-                scaleFactor = scaleFactor
+                scaleFactor = scaleFactor,
+                isDarkTheme = isDarkTheme
             )
 
             // Zoom Hint Icon
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
+                    .shadow(if (isDarkTheme) 0.dp else 4.dp, RoundedCornerShape(12.dp), spotColor = Color(0x1F1E293B))
                     .clip(RoundedCornerShape(12.dp))
-                    .background(SurfaceDark)
-                    .padding(horizontal = 8.dp, vertical = 6.dp)
+                    .background(glassBg)
+                    .border(1.dp, glassBorder, RoundedCornerShape(12.dp))
+                    .padding(horizontal = 10.dp, vertical = 8.dp)
             ) {
                 Icon(
                     imageVector = Icons.Rounded.ZoomIn,
                     contentDescription = null,
-                    tint = CyanAccent,
-                    modifier = Modifier.size(16.dp)
+                    tint = primaryAccent,
+                    modifier = Modifier.size(18.dp)
                 )
             }
         }
@@ -115,27 +148,32 @@ fun ResultScreen(
                 .fillMaxWidth()
                 .weight(1f)
                 .padding(horizontal = 12.dp)
+                .shadow(if (isDarkTheme) 0.dp else 6.dp, RoundedCornerShape(20.dp), spotColor = Color(0x1F1E293B))
                 .clip(RoundedCornerShape(20.dp))
-                .background(SurfaceDark)
+                .background(sliderBg)
+                .border(1.dp, glassBorder, RoundedCornerShape(20.dp))
         ) {
             ComparisonSlider(
                 beforeBitmap = sourceBitmap,
-                afterBitmap = upscaledBitmap
+                afterBitmap = upscaledBitmap,
+                isDarkTheme = isDarkTheme
             )
         }
 
-        // Bottom Action Bar
+        // Bottom Action Bar (Frosted Glass Container)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(SurfaceDark)
+                .shadow(if (isDarkTheme) 0.dp else 8.dp, spotColor = Color(0x1F1E293B))
+                .background(glassBg)
+                .border(BorderStroke(1.dp, glassBorder))
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = stringResource(id.xms.ohscaler.egg.core.designsystem.R.string.zoom_hint),
                 fontSize = 12.sp,
-                color = TextMuted
+                color = textMuted
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -150,7 +188,8 @@ fun ResultScreen(
                         .weight(1f)
                         .height(52.dp),
                     shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary)
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = textSecondary),
+                    border = BorderStroke(1.dp, glassBorder)
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.AddPhotoAlternate,
@@ -179,14 +218,14 @@ fun ResultScreen(
                     enabled = !isSaving,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = EmeraldSuccess,
-                        contentColor = TextPrimary
+                        contentColor = Color.White
                     )
                 ) {
                     if (isSaving) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(20.dp),
                             strokeWidth = 2.dp,
-                            color = TextPrimary
+                            color = Color.White
                         )
                     } else {
                         Icon(
@@ -215,7 +254,8 @@ fun ResultScreen(
     isSaving: Boolean,
     onSave: ((Boolean) -> Unit) -> Unit,
     onReset: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isDarkTheme: Boolean = isSystemInDarkTheme()
 ) {
     ResultScreen(
         sourceBitmap = sourceBitmap,
@@ -224,7 +264,7 @@ fun ResultScreen(
         isSaving = isSaving,
         onSave = onSave,
         onReset = onReset,
-        modifier = modifier
+        modifier = modifier,
+        isDarkTheme = isDarkTheme
     )
 }
-
