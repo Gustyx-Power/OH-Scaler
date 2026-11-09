@@ -195,7 +195,7 @@ fun StudioViewportStage(
         contentAlignment = Alignment.Center
     ) {
         Image(
-            bitmap = sourceBitmap.asImageBitmap(),
+            bitmap = remember(sourceBitmap) { id.xms.ohscaler.egg.core.ui.BitmapDisplayUtils.toDisplaySafeBitmap(sourceBitmap).asImageBitmap() },
             contentDescription = null,
             modifier = Modifier
                 .fillMaxSize()

@@ -69,8 +69,10 @@ fun ComparisonSlider(
         offset = if (scale > 1f) offset + offsetChange else Offset.Zero
     }
 
-    val beforeImageBitmap = remember(beforeBitmap) { beforeBitmap.asImageBitmap() }
-    val afterImageBitmap = remember(afterBitmap) { afterBitmap.asImageBitmap() }
+    val displayBeforeBitmap = remember(beforeBitmap) { BitmapDisplayUtils.toDisplaySafeBitmap(beforeBitmap) }
+    val displayAfterBitmap = remember(afterBitmap) { BitmapDisplayUtils.toDisplaySafeBitmap(afterBitmap) }
+    val beforeImageBitmap = remember(displayBeforeBitmap) { displayBeforeBitmap.asImageBitmap() }
+    val afterImageBitmap = remember(displayAfterBitmap) { displayAfterBitmap.asImageBitmap() }
     val dividerColor = if (isDarkTheme) DarkPrimary else LightPrimary
 
     BoxWithConstraints(
