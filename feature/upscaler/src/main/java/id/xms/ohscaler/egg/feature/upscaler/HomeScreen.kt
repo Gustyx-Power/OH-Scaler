@@ -85,6 +85,9 @@ fun HomeScreen(
                     FullscreenProcessingScreen(
                         progress = uiState.progress,
                         onCancel = { viewModel.cancelUpscale() },
+                        sourceWidth = uiState.sourceBitmap?.width ?: 0,
+                        sourceHeight = uiState.sourceBitmap?.height ?: 0,
+                        scaleFactor = uiState.scaleFactor,
                         isDarkTheme = isDarkTheme
                     )
                 }

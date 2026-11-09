@@ -85,16 +85,18 @@ fun HeroShowcaseCarousel(
     val haptic = LocalHapticFeedback.current
     val pagerState = rememberPagerState(pageCount = { 3 })
 
-    // Auto-scroll carousel every 4 seconds smoothly
-    LaunchedEffect(pagerState) {
+    // Auto-scroll carousel every 4 seconds smoothly and resiliently
+    LaunchedEffect(Unit) {
         while (true) {
             delay(4000L)
             if (!pagerState.isScrollInProgress) {
                 val nextPage = (pagerState.currentPage + 1) % 3
-                pagerState.animateScrollToPage(
-                    page = nextPage,
-                    animationSpec = tween(durationMillis = 650, easing = FastOutSlowInEasing)
-                )
+                runCatching {
+                    pagerState.animateScrollToPage(
+                        page = nextPage,
+                        animationSpec = tween(durationMillis = 650, easing = FastOutSlowInEasing)
+                    )
+                }
             }
         }
     }

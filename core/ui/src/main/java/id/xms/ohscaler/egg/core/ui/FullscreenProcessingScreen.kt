@@ -1,10 +1,14 @@
 package id.xms.ohscaler.egg.core.ui
 
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -17,6 +21,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,12 +31,17 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.AutoFixHigh
+import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.GridView
+import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material.icons.rounded.Shield
+import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
@@ -46,31 +56,29 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.xms.ohscaler.egg.core.ai.UpscaleProgress
 import id.xms.ohscaler.egg.core.designsystem.DarkPrimary
 import id.xms.ohscaler.egg.core.designsystem.DarkSecondary
-import id.xms.ohscaler.egg.core.designsystem.DarkTextMuted
-import id.xms.ohscaler.egg.core.designsystem.DarkTextPrimary
-import id.xms.ohscaler.egg.core.designsystem.DarkTextSecondary
 import kotlinx.coroutines.delay
 import java.util.Locale
-import kotlin.math.cos
 import kotlin.math.roundToInt
-import kotlin.math.sin
 
 @Composable
 fun FullscreenProcessingScreen(
     progress: UpscaleProgress,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
+    sourceWidth: Int = 0,
+    sourceHeight: Int = 0,
+    scaleFactor: Float = 2.0f,
     isDarkTheme: Boolean = isSystemInDarkTheme()
 ) {
     val haptic = LocalHapticFeedback.current
@@ -105,30 +113,43 @@ fun FullscreenProcessingScreen(
         val avgTimePerTile = elapsedSeconds / currentTile
         val remainingTiles = totalTiles - currentTile
         val estSec = (remainingTiles * avgTimePerTile).roundToInt().coerceAtLeast(1)
-        "Est. ~${estSec}s remaining"
+        "Est. ~$estSec detik lagi"
     } else {
-        "Optimizing on-device pipeline…"
+        "Menyiapkan pipeline AI on-device…"
     }
 
-    // Infinite animations for pulsing rings and radar scanline
-    val transition = rememberInfiniteTransition(label = "neuralPulse")
-    val pulseScale1 by transition.animateFloat(
-        initialValue = 0.85f,
-        targetValue = 1.25f,
-        animationSpec = infiniteRepeatable(tween(2400, easing = LinearEasing), RepeatMode.Reverse),
-        label = "pulse1"
-    )
-    val pulseScale2 by transition.animateFloat(
-        initialValue = 1.15f,
-        targetValue = 0.75f,
-        animationSpec = infiniteRepeatable(tween(3000, easing = LinearEasing), RepeatMode.Reverse),
-        label = "pulse2"
-    )
-    val radarAngle by transition.animateFloat(
+    // Resolusi Asli & Target
+    val actualSrcW = if (sourceWidth > 0) sourceWidth else if (progress is UpscaleProgress.ReadingPixels) progress.sourceWidth else 496
+    val actualSrcH = if (sourceHeight > 0) sourceHeight else if (progress is UpscaleProgress.ReadingPixels) progress.sourceHeight else 603
+    val targetW = (actualSrcW * scaleFactor).roundToInt()
+    val targetH = (actualSrcH * scaleFactor).roundToInt()
+    val scaleLabel = if (scaleFactor % 1f == 0f) "${scaleFactor.toInt()}×" else "${scaleFactor}×"
+
+    // Infinite animations for data flow and pulse glow
+    val transition = rememberInfiniteTransition(label = "flowAnimation")
+    val flowProgress1 by transition.animateFloat(
         initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(4000, easing = LinearEasing), RepeatMode.Restart),
-        label = "radar"
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1400, easing = LinearEasing), RepeatMode.Restart),
+        label = "flowPulse1"
+    )
+    val flowProgress2 by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1400, easing = LinearEasing), RepeatMode.Restart),
+        label = "flowPulse2"
+    )
+    val hardwareGlow by transition.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1000, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "hardwareGlow"
+    )
+    val shimmerOffset by transition.animateFloat(
+        initialValue = -0.5f,
+        targetValue = 1.5f,
+        animationSpec = infiniteRepeatable(tween(2000, easing = LinearEasing), RepeatMode.Restart),
+        label = "shimmer"
     )
 
     val primaryColor = DarkPrimary // Cyan #22D3EE
@@ -139,7 +160,7 @@ fun FullscreenProcessingScreen(
         modifier = modifier
             .fillMaxSize()
             .background(bgColor)
-            .padding(horizontal = 24.dp, vertical = 20.dp)
+            .padding(horizontal = 20.dp, vertical = 18.dp)
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -204,154 +225,492 @@ fun FullscreenProcessingScreen(
             }
 
             // ================================================================
-            // 2. Center Section: Pulsing Neural Radar Animation Stage
+            // 2. Center Section: Hierarchical Hardware & Data Flow Animation
             // ================================================================
-            Box(
+            Column(
                 modifier = Modifier
-                    .size(240.dp),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .padding(vertical = 10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Multi-layer radar canvas
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val center = Offset(size.width / 2f, size.height / 2f)
-                    val baseRadius = size.width / 2.3f
-
-                    // Outer faint orbit
-                    drawCircle(
-                        color = Color(0x2422D3EE),
-                        radius = baseRadius * pulseScale1,
-                        center = center,
-                        style = Stroke(width = 1.5.dp.toPx())
-                    )
-
-                    // Secondary intersecting orbit
-                    drawCircle(
-                        color = Color(0x24F472B6),
-                        radius = baseRadius * pulseScale2 * 0.9f,
-                        center = center,
-                        style = Stroke(width = 1.5.dp.toPx())
-                    )
-
-                    // Rotating Cyber Scanline Sweep
-                    val rad = Math.toRadians(radarAngle.toDouble())
-                    val endX = center.x + (baseRadius * 0.95f) * cos(rad).toFloat()
-                    val endY = center.y + (baseRadius * 0.95f) * sin(rad).toFloat()
-
-                    drawLine(
-                        brush = Brush.radialGradient(
-                            colors = listOf(primaryColor, Color.Transparent),
-                            center = center,
-                            radius = baseRadius
-                        ),
-                        start = center,
-                        end = Offset(endX, endY),
-                        strokeWidth = 2.dp.toPx(),
-                        cap = StrokeCap.Round
-                    )
-                }
-
-                // Inner Glowing Sphere
+                // Top Node: Original Image (Foto Asli)
                 Box(
                     modifier = Modifier
-                        .size(90.dp)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.radialGradient(
-                                colors = listOf(primaryColor.copy(alpha = 0.35f), Color(0x00000000))
-                            )
-                        )
-                        .border(1.5.dp, primaryColor.copy(alpha = 0.6f), CircleShape),
-                    contentAlignment = Alignment.Center
+                        .fillMaxWidth(0.92f)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(Color(0x261E293B))
+                        .border(1.dp, Color(0x4D22D3EE), RoundedCornerShape(18.dp))
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Memory,
-                        contentDescription = null,
-                        tint = primaryColor,
-                        modifier = Modifier.size(42.dp)
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color(0x2B22D3EE)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Image,
+                                    contentDescription = "Foto Asli",
+                                    tint = primaryColor,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = "FOTO ASLI",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF94A3B8),
+                                    letterSpacing = 0.8.sp
+                                )
+                                Text(
+                                    text = "$actualSrcW × $actualSrcH px",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color.White
+                                )
+                            }
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(Color(0x1F22D3EE))
+                                .border(1.dp, Color(0x3322D3EE), CircleShape)
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) {
+                            Text(
+                                text = "RAW INPUT",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = primaryColor
+                            )
+                        }
+                    }
+                }
+
+                // Fluid Connector 1 (Top -> Middle Hardware Cluster)
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxWidth(0.92f)
+                        .height(30.dp)
+                ) {
+                    val w = size.width
+                    val h = size.height
+                    val startX = w / 2f
+                    val startY = 0f
+                    val endY = h
+
+                    // 4 target X coordinates corresponding to CPU, GPU, NPU, RAM centers
+                    val xTargets = listOf(w * 0.125f, w * 0.375f, w * 0.625f, w * 0.875f)
+
+                    xTargets.forEach { endX ->
+                        val path = Path().apply {
+                            moveTo(startX, startY)
+                            cubicTo(
+                                startX, startY + h * 0.5f,
+                                endX, startY + h * 0.5f,
+                                endX, endY
+                            )
+                        }
+                        // Track line
+                        drawPath(
+                            path = path,
+                            color = Color(0x3322D3EE),
+                            style = Stroke(width = 1.5.dp.toPx())
+                        )
+
+                        // Animated Photon Pulse
+                        val t = flowProgress1
+                        // Approximate cubic bezier point
+                        val oneMinusT = 1f - t
+                        val pX = (oneMinusT * oneMinusT * oneMinusT * startX) +
+                                (3f * oneMinusT * oneMinusT * t * startX) +
+                                (3f * oneMinusT * t * t * endX) +
+                                (t * t * t * endX)
+                        val pY = (oneMinusT * oneMinusT * oneMinusT * startY) +
+                                (3f * oneMinusT * oneMinusT * t * (startY + h * 0.5f)) +
+                                (3f * oneMinusT * t * t * (startY + h * 0.5f)) +
+                                (t * t * t * endY)
+
+                        drawCircle(
+                            color = primaryColor,
+                            radius = 3.5.dp.toPx(),
+                            center = Offset(pX, pY)
+                        )
+                        drawCircle(
+                            color = primaryColor.copy(alpha = 0.35f),
+                            radius = 7.dp.toPx(),
+                            center = Offset(pX, pY)
+                        )
+                    }
+                }
+
+                // Middle Cluster: Heterogeneous Hardware (CPU, GPU, NPU, RAM)
+                Column(
+                    modifier = Modifier.fillMaxWidth(0.96f),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 6.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Memory,
+                            contentDescription = null,
+                            tint = primaryColor,
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Text(
+                            text = "HETEROGENEOUS AI CORE ACCELERATION",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF94A3B8),
+                            letterSpacing = 0.6.sp
+                        )
+                    }
+
+                    // 4 Hardware Units in a Fluid Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        // CPU
+                        HardwareNodeCard(
+                            name = "CPU",
+                            role = "ARM NEON",
+                            subRole = "YUV & Slicing",
+                            icon = Icons.Rounded.Memory,
+                            accentColor = Color(0xFF38BDF8),
+                            isActive = true,
+                            glowAlpha = hardwareGlow,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        // GPU
+                        HardwareNodeCard(
+                            name = "GPU",
+                            role = "Vulkan Ops",
+                            subRole = "Tensor Conv",
+                            icon = Icons.Rounded.Bolt,
+                            accentColor = Color(0xFFFBBF24),
+                            isActive = true,
+                            glowAlpha = hardwareGlow,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        // NPU
+                        HardwareNodeCard(
+                            name = "NPU",
+                            role = "Neural Core",
+                            subRole = "Inference AI",
+                            icon = Icons.Rounded.AutoAwesome,
+                            accentColor = Color(0xFFF472B6),
+                            isActive = true,
+                            glowAlpha = hardwareGlow,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        // RAM
+                        HardwareNodeCard(
+                            name = "RAM",
+                            role = "Zero-OOM",
+                            subRole = "Tile Stream",
+                            icon = Icons.Rounded.Storage,
+                            accentColor = Color(0xFF34D399),
+                            isActive = true,
+                            glowAlpha = hardwareGlow,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                // Fluid Connector 2 (Middle Hardware Cluster -> Target Output Node)
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxWidth(0.92f)
+                        .height(30.dp)
+                ) {
+                    val w = size.width
+                    val h = size.height
+                    val endX = w / 2f
+                    val endY = h
+                    val startY = 0f
+
+                    val xSources = listOf(w * 0.125f, w * 0.375f, w * 0.625f, w * 0.875f)
+
+                    xSources.forEach { startX ->
+                        val path = Path().apply {
+                            moveTo(startX, startY)
+                            cubicTo(
+                                startX, startY + h * 0.5f,
+                                endX, startY + h * 0.5f,
+                                endX, endY
+                            )
+                        }
+                        // Track line
+                        drawPath(
+                            path = path,
+                            color = Color(0x33F472B6),
+                            style = Stroke(width = 1.5.dp.toPx())
+                        )
+
+                        // Animated Photon Pulse
+                        val t = flowProgress2
+                        val oneMinusT = 1f - t
+                        val pX = (oneMinusT * oneMinusT * oneMinusT * startX) +
+                                (3f * oneMinusT * oneMinusT * t * startX) +
+                                (3f * oneMinusT * t * t * endX) +
+                                (t * t * t * endX)
+                        val pY = (oneMinusT * oneMinusT * oneMinusT * startY) +
+                                (3f * oneMinusT * oneMinusT * t * (startY + h * 0.5f)) +
+                                (3f * oneMinusT * t * t * (startY + h * 0.5f)) +
+                                (t * t * t * endY)
+
+                        drawCircle(
+                            color = secondaryColor,
+                            radius = 3.5.dp.toPx(),
+                            center = Offset(pX, pY)
+                        )
+                        drawCircle(
+                            color = secondaryColor.copy(alpha = 0.35f),
+                            radius = 7.dp.toPx(),
+                            center = Offset(pX, pY)
+                        )
+                    }
+                }
+
+                // Bottom Node: Target Image (Hasil AI)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.92f)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(Color(0x261E293B))
+                        .border(1.dp, Color(0x66F472B6), RoundedCornerShape(18.dp))
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color(0x2BF472B6)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.AutoFixHigh,
+                                    contentDescription = "Hasil AI",
+                                    tint = secondaryColor,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = "HASIL AI ($scaleLabel)",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = secondaryColor,
+                                    letterSpacing = 0.8.sp
+                                )
+                                Text(
+                                    text = "$targetW × $targetH px",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color.White
+                                )
+                            }
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(
+                                    Brush.horizontalGradient(
+                                        listOf(Color(0xFF6366F1), Color(0xFFEC4899))
+                                    )
+                                )
+                                .padding(horizontal = 9.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = "ENHANCED",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White
+                            )
+                        }
+                    }
                 }
             }
 
             // ================================================================
-            // 3. Lower Section: Live Metrics, Progress Bar, Step Status
+            // 3. Lower Section: Modified Material Capsule Progress Bar
             // ================================================================
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Title and Estimated Remaining
-                Text(
-                    text = if (totalTiles > 0) "Neural AI Processing" else "Preparing Model",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-
-                Text(
-                    text = estimatedRemainingText,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = primaryColor
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // Linear Gradient Progress Bar
-                LinearProgressIndicator(
-                    progress = { progressFraction },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp)
-                        .clip(RoundedCornerShape(4.dp)),
-                    color = primaryColor,
-                    trackColor = Color(0x26FFFFFF),
-                )
-
-                // Tile Counter & Percentage Row
+                // Header Row: Tile Badge & Bold Percentage
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = if (totalTiles > 0) "Tile $currentTile of $totalTiles" else "Analyzing image structure…",
-                        fontSize = 12.sp,
-                        color = Color(0xFFCBD5E1),
-                        fontWeight = FontWeight.Medium
-                    )
+                    // Tile Pill Badge
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0x1F1E293B))
+                            .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.GridView,
+                            contentDescription = null,
+                            tint = primaryColor,
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Text(
+                            text = if (totalTiles > 0) "Tile $currentTile dari $totalTiles" else "Inisialisasi Model AI…",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFFE2E8F0)
+                        )
+                    }
+
+                    // Bold Percentage
                     Text(
                         text = "${(progressFraction * 100).roundToInt()}%",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.ExtraBold,
                         color = primaryColor
                     )
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
+                // Custom Capsule Material Progress Bar
+                val animatedProgress by animateFloatAsState(
+                    targetValue = progressFraction.coerceIn(0.03f, 1f),
+                    animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioNoBouncy),
+                    label = "capsuleProgress"
+                )
 
-                // Hardware Protection Pill
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0x1A1E293B))
-                        .border(1.dp, Color(0x2EFFFFFF), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 14.dp, vertical = 7.dp)
+                        .fillMaxWidth()
+                        .height(20.dp)
+                        .clip(CircleShape)
+                        .background(Color(0x2B1E293B))
+                        .border(1.dp, Color(0x2EFFFFFF), CircleShape)
                 ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Shield,
-                        contentDescription = null,
-                        tint = secondaryColor,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Single-Tile Stream • Zero-OOM RAM Protection",
-                        fontSize = 11.5.sp,
-                        color = Color(0xFFE2E8F0),
-                        fontWeight = FontWeight.Medium
-                    )
+                    // Filled Gradient Bar
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(animatedProgress)
+                            .fillMaxHeight()
+                            .clip(CircleShape)
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(
+                                        Color(0xFF06B6D4), // Cyan
+                                        Color(0xFF6366F1), // Indigo
+                                        Color(0xFFEC4899)  // Pink
+                                    )
+                                )
+                            )
+                    ) {
+                        // Fluid Shimmer Light Beam Pass
+                        Canvas(modifier = Modifier.fillMaxSize()) {
+                            val beamWidth = size.width * 0.4f
+                            val beamX = size.width * shimmerOffset
+                            drawRect(
+                                brush = Brush.horizontalGradient(
+                                    colors = listOf(
+                                        Color.Transparent,
+                                        Color.White.copy(alpha = 0.4f),
+                                        Color.Transparent
+                                    ),
+                                    startX = beamX - beamWidth / 2f,
+                                    endX = beamX + beamWidth / 2f
+                                )
+                            )
+                        }
+
+                        // Leading Head Glow Dot
+                        Box(
+                            modifier = Modifier
+                                .size(12.dp)
+                                .align(Alignment.CenterEnd)
+                                .padding(end = 4.dp)
+                                .clip(CircleShape)
+                                .background(Color.White)
+                        )
+                    }
+                }
+
+                // Sub-Row: Estimated Time & Hardware Stream Tag
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Timer,
+                            contentDescription = null,
+                            tint = Color(0xFF38BDF8),
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Text(
+                            text = estimatedRemainingText,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF38BDF8)
+                        )
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Shield,
+                            contentDescription = null,
+                            tint = Color(0xFF34D399),
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Text(
+                            text = "Zero-OOM Protected",
+                            fontSize = 11.sp,
+                            color = Color(0xFF94A3B8)
+                        )
+                    }
                 }
             }
 
@@ -371,7 +730,7 @@ fun FullscreenProcessingScreen(
                             onCancel()
                         }
                     )
-                    .padding(horizontal = 24.dp, vertical = 10.dp),
+                    .padding(horizontal = 24.dp, vertical = 9.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Row(
@@ -380,18 +739,80 @@ fun FullscreenProcessingScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Close,
-                        contentDescription = "Cancel",
+                        contentDescription = "Batalkan",
                         tint = Color(0xFFCBD5E1),
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(15.dp)
                     )
                     Text(
-                        text = "Cancel Processing",
-                        fontSize = 13.sp,
+                        text = "Batalkan Proses",
+                        fontSize = 12.5.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFFCBD5E1)
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun HardwareNodeCard(
+    name: String,
+    role: String,
+    subRole: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    accentColor: Color,
+    isActive: Boolean,
+    glowAlpha: Float,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(13.dp))
+            .background(Color(0x241E293B))
+            .border(
+                1.dp,
+                if (isActive) accentColor.copy(alpha = 0.3f + 0.35f * glowAlpha) else Color(0x26FFFFFF),
+                RoundedCornerShape(13.dp)
+            )
+            .padding(vertical = 8.dp, horizontal = 4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(accentColor.copy(alpha = 0.18f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = name,
+                    tint = accentColor,
+                    modifier = Modifier.size(14.dp)
+                )
+            }
+            Text(
+                text = name,
+                fontSize = 11.5.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Text(
+                text = role,
+                fontSize = 8.5.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = accentColor
+            )
+            Text(
+                text = subRole,
+                fontSize = 7.5.sp,
+                color = Color(0xFF94A3B8)
+            )
         }
     }
 }
