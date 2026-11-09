@@ -7,9 +7,13 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import id.xms.ohscaler.egg.core.designsystem.OHScalerTheme
+import id.xms.ohscaler.egg.core.storage.AppThemeMode
 import id.xms.ohscaler.egg.feature.upscaler.HomeScreen
 import id.xms.ohscaler.egg.feature.upscaler.UpscalerViewModel
 
@@ -22,8 +26,15 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            OHScalerTheme {
-                viewModel = viewModel()
+            viewModel = viewModel()
+            val uiState by viewModel.uiState.collectAsState()
+            val isDark = when (uiState.themeMode) {
+                AppThemeMode.DARK -> true
+                AppThemeMode.LIGHT -> false
+                AppThemeMode.SYSTEM -> isSystemInDarkTheme()
+            }
+
+            OHScalerTheme(darkTheme = isDark) {
                 val incomingUri = extractUri(intent)
                 android.util.Log.d("OHScaler", "onCreate incomingUri: $incomingUri")
                 LaunchedEffect(incomingUri) {
@@ -31,7 +42,10 @@ class MainActivity : ComponentActivity() {
                         viewModel.onImageSelected(incomingUri)
                     }
                 }
-                HomeScreen(viewModel = viewModel)
+                HomeScreen(
+                    viewModel = viewModel,
+                    isDarkTheme = isDark
+                )
             }
         }
     }

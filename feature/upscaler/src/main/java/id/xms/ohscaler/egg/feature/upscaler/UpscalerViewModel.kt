@@ -10,6 +10,8 @@ import id.xms.ohscaler.egg.core.ai.FallbackUpscalerEngine
 import id.xms.ohscaler.egg.core.ai.OnnxUpscalerEngine
 import id.xms.ohscaler.egg.core.ai.TuningConfig
 import id.xms.ohscaler.egg.core.ai.UpscaleProgress
+import id.xms.ohscaler.egg.core.storage.AppPreferences
+import id.xms.ohscaler.egg.core.storage.AppThemeMode
 import id.xms.ohscaler.egg.core.storage.ImageDecoderHelper
 import id.xms.ohscaler.egg.core.storage.ScopedStorageManager
 import kotlinx.coroutines.Dispatchers
@@ -22,6 +24,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 enum class ScreenState {
+    Onboarding,
     HomeHub,
     StudioWorkspace,
     ResultPreview
@@ -42,6 +45,7 @@ enum class TuningPreset {
 
 data class UpscalerUiState(
     val currentScreen: ScreenState = ScreenState.HomeHub,
+    val themeMode: AppThemeMode = AppThemeMode.DARK,
     val activeFeatureMode: FeatureMode = FeatureMode.SuperResolution,
     val sourceUri: Uri? = null,
     val sourceBitmap: Bitmap? = null,
@@ -61,13 +65,19 @@ data class UpscalerUiState(
 
 class UpscalerViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val _uiState = MutableStateFlow(UpscalerUiState())
-    val uiState: StateFlow<UpscalerUiState> = _uiState.asStateFlow()
-
+    private val preferences = AppPreferences(application)
     private val storageManager = ScopedStorageManager(application)
     private val onnxEngine = OnnxUpscalerEngine(
         fallbackEngine = FallbackUpscalerEngine()
     )
+
+    private val _uiState = MutableStateFlow(
+        UpscalerUiState(
+            currentScreen = if (preferences.isOnboardingCompleted()) ScreenState.HomeHub else ScreenState.Onboarding,
+            themeMode = preferences.getThemeMode()
+        )
+    )
+    val uiState: StateFlow<UpscalerUiState> = _uiState.asStateFlow()
 
     private var upscaleJob: Job? = null
 
@@ -94,6 +104,22 @@ class UpscalerViewModel(application: Application) : AndroidViewModel(application
             _uiState.update { it.copy(isEngineReady = ready) }
             android.util.Log.d("OHScaler", "ONNX Model loaded into engine. isEngineReady=$ready")
         }
+    }
+
+    fun toggleTheme() {
+        val current = _uiState.value.themeMode
+        val newMode = if (current == AppThemeMode.LIGHT) AppThemeMode.DARK else AppThemeMode.LIGHT
+        preferences.setThemeMode(newMode)
+        _uiState.update { it.copy(themeMode = newMode) }
+    }
+
+    fun completeOnboarding() {
+        preferences.setOnboardingCompleted(true)
+        _uiState.update { it.copy(currentScreen = ScreenState.HomeHub) }
+    }
+
+    fun reopenOnboarding() {
+        _uiState.update { it.copy(currentScreen = ScreenState.Onboarding) }
     }
 
     fun loadRecentCreations() {
