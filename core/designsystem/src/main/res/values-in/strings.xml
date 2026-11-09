@@ -2,18 +2,52 @@
     <string name="app_name">OH-Scaler</string>
     <string name="app_tagline">Super Resolusi Citra AI Offline</string>
 
+    <!-- Onboarding Screen -->
+    <string name="onboard_title_1">100% On-Device &amp; Privat</string>
+    <string name="onboard_desc_1">Jalankan model AI neural langsung pada hardware ponsel Anda. Tanpa kirim data ke server cloud, tanpa antrean, dan tanpa pelacakan.</string>
+    <string name="onboard_title_2">Pulihkan Kejernihan &amp; Bebas Blur</string>
+    <string name="onboard_desc_2">Perbesar hingga 8× dengan Real-ESRGAN Compact. Rekonstruksi kontur tepian halus dan hilangkan gerigi piksel secara otomatis.</string>
+    <string name="onboard_title_3">Studio Interaktif &amp; Ekspor</string>
+    <string name="onboard_desc_3">Sesuaikan ketajaman secara real-time, periksa setiap piksel dengan slider komparasi 60 FPS, dan simpan langsung ke galeri foto.</string>
+    <string name="onboard_skip">Lewati</string>
+    <string name="onboard_next">Lanjut</string>
+    <string name="onboard_start">Mulai Sekarang</string>
+
     <!-- Home Hub Screen -->
     <string name="home_hero_title">Tingkatkan Resolusi Foto dengan AI Lokal</string>
     <string name="home_hero_desc">100% privat dan offline. Tanpa langganan, tanpa antrean cloud, dan tanpa iklan.</string>
+    <string name="home_dropzone_title">Ketuk untuk Pilih Foto</string>
+    <string name="home_dropzone_subtitle">Pilih foto apa saja untuk diperbesar langsung</string>
     <string name="engine_status_active">● AI Engine: Real-ESRGAN Compact (Aktif)</string>
     <string name="engine_status_loading">○ AI Engine: Menyiapkan…</string>
+    <string name="engine_pill_offline">100% Offline</string>
     <string name="section_tools">Pilihan Utilitas AI</string>
+    <string name="section_tools_subtitle">Pilih pipeline yang paling sesuai untuk foto Anda</string>
     <string name="section_recent">Hasil Terakhir</string>
-    <string name="recent_empty">Belum ada kreasi. Pilih salah satu fitur untuk mulai!</string>
+    <string name="recent_empty">Belum ada kreasi. Pilih foto untuk mulai!</string>
+    <string name="action_quick_pick">Pilih Foto</string>
+    <string name="action_help_tutorial">Bantuan &amp; Tutorial</string>
+    <string name="action_toggle_theme">Ganti Tema</string>
+
+    <!-- Dribbble Navigation & Filters -->
+    <string name="tab_enhance">Tingkatkan</string>
+    <string name="tab_creations">Kreasi</string>
+    <string name="filter_all">Semua Alat</string>
+    <string name="filter_super_res">Super-Res</string>
+    <string name="filter_deblur">Restorasi</string>
+    <string name="filter_studio">Studio Pro</string>
+    <string name="hero_cta_select">Pilih Foto  ›</string>
+
+    <!-- Bento Telemetry -->
+    <string name="bento_telemetry_title">100% Offline</string>
+    <string name="bento_telemetry_badge">NPU On-Device</string>
+    <string name="bento_telemetry_stat1">⚡ Latensi Cloud 0ms</string>
+    <string name="bento_telemetry_stat2">🔒 Tanpa Kirim Data</string>
+    <string name="bento_telemetry_stat3">🧠 Real-ESRGAN Lokal</string>
 
     <!-- Feature Cards -->
     <string name="tool_super_res_title">AI Super-Resolution</string>
-    <string name="tool_super_res_desc">Perbesar foto mulai 1.5× hingga 8× dengan proteksi anti-aliasing otomatis.</string>
+    <string name="tool_super_res_desc">Perbesar foto hingga 8× dengan rekonstruksi detail neural dan pelindung anti-gerigi.</string>
     <string name="tool_deblur_title">Restorasi &amp; Penajaman Foto</string>
     <string name="tool_deblur_desc">Pulihkan ketajaman kontur tepi dari keburaman atau guncangan kamera.</string>
     <string name="tool_pro_studio_title">Pro Tuning Studio</string>

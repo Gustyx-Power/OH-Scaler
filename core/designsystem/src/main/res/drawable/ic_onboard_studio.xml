@@ -1,0 +1,71 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <!-- Ambient Halo Background -->
+    <path
+        android:fillColor="#15F59E0B"
+        android:pathData="M60,15 A45,45 0 1,1 59.99,15 Z" />
+
+    <!-- Studio Console Slate Surface -->
+    <path
+        android:fillColor="#111625"
+        android:strokeColor="#7C3AED"
+        android:strokeWidth="2.5"
+        android:pathData="M18,30 L102,30 A8,8 0 0,1 110,38 L110,88 A8,8 0 0,1 102,96 L18,96 A8,8 0 0,1 10,88 L10,38 A8,8 0 0,1 18,30 Z" />
+
+    <!-- 8x Multi-Scale Badge in Studio Screen -->
+    <path
+        android:fillColor="#222C44"
+        android:strokeColor="#06B6D4"
+        android:strokeWidth="1.5"
+        android:pathData="M24,42 L52,42 A4,4 0 0,1 56,46 L56,66 A4,4 0 0,1 52,70 L24,70 A4,4 0 0,1 20,66 L20,46 A4,4 0 0,1 24,42 Z" />
+    <!-- 8x Badge Text / Glyph -->
+    <path
+        android:strokeColor="#22D3EE"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M32,51 A3,3 0 1,1 31.99,51 M32,61 A3.5,3.5 0 1,1 31.99,61 M42,53 L48,63 M48,53 L42,63" />
+
+    <!-- Slider 1 Track & Thumb -->
+    <path
+        android:strokeColor="#232D42"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M68,48 L100,48" />
+    <path
+        android:strokeColor="#7C3AED"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M68,48 L86,48" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M86,48 A4,4 0 1,1 85.99,48 Z" />
+
+    <!-- Slider 2 Track & Thumb -->
+    <path
+        android:strokeColor="#232D42"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M68,66 L100,66" />
+    <path
+        android:strokeColor="#F59E0B"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M68,66 L92,66" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M92,66 A4,4 0 1,1 91.99,66 Z" />
+
+    <!-- Bottom Save Check Pill -->
+    <path
+        android:fillColor="#10B981"
+        android:pathData="M44,80 L76,80 A5,5 0 0,1 81,85 A5,5 0 0,1 76,90 L44,90 A5,5 0 0,1 39,85 A5,5 0 0,1 44,80 Z" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M56,85 L59,88 L65,82" />
+</vector>

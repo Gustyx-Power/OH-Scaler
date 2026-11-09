@@ -1,0 +1,50 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <!-- Ambient Backdrop Circle -->
+    <path
+        android:fillColor="#15F43F5E"
+        android:pathData="M60,15 A45,45 0 1,1 59.99,15 Z" />
+
+    <!-- Split Picture Frame -->
+    <path
+        android:fillColor="#111625"
+        android:strokeColor="#232D42"
+        android:strokeWidth="3"
+        android:pathData="M22,26 L98,26 A8,8 0 0,1 106,34 L106,86 A8,8 0 0,1 98,94 L22,94 A8,8 0 0,1 14,86 L14,34 A8,8 0 0,1 22,26 Z" />
+
+    <!-- Left Half (Soft Blur Effect representation) -->
+    <path
+        android:fillColor="#171F32"
+        android:pathData="M16,34 L60,34 L60,92 L16,92 Z" />
+    <path
+        android:strokeColor="#64748B"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M26,50 L46,50 M22,62 L52,62 M28,74 L42,74" />
+
+    <!-- Right Half (Crisp High-Frequency Edge Boost) -->
+    <path
+        android:fillColor="#222C44"
+        android:pathData="M60,34 L104,34 L104,92 L60,92 Z" />
+    <!-- Mountain Crisp Polygon -->
+    <path
+        android:fillColor="#7C3AED"
+        android:strokeColor="#A78BFA"
+        android:strokeWidth="1.5"
+        android:pathData="M60,92 L76,64 L86,76 L94,62 L104,92 Z" />
+
+    <!-- Center Laser / Comparison Division Line -->
+    <path
+        android:strokeColor="#06B6D4"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:pathData="M60,20 L60,100" />
+
+    <!-- Dynamic AI Sparkle on Sharp Side -->
+    <path
+        android:fillColor="#22D3EE"
+        android:pathData="M92,36 C92,40 89,43 85,43 C89,43 92,46 92,50 C92,46 95,43 99,43 C95,43 92,40 92,36 Z" />
+</vector>

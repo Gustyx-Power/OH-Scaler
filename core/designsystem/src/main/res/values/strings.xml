@@ -2,18 +2,52 @@
     <string name="app_name">OH-Scaler</string>
     <string name="app_tagline">Offline AI Image Super-Resolution</string>
 
+    <!-- Onboarding Screen -->
+    <string name="onboard_title_1">100% On-Device &amp; Private</string>
+    <string name="onboard_desc_1">Run neural AI models directly on your phone hardware. Zero data sent to cloud servers, no queues, zero tracking.</string>
+    <string name="onboard_title_2">Restore Clarity &amp; Deblur</string>
+    <string name="onboard_desc_2">Upscale up to 8× with Real-ESRGAN Compact. Reconstruct fine edges and eliminate pixel staircases with intelligent anti-aliasing.</string>
+    <string name="onboard_title_3">Interactive Studio &amp; Export</string>
+    <string name="onboard_desc_3">Fine-tune sharpness in real-time, inspect every pixel with the split comparison slider, and save directly to your gallery.</string>
+    <string name="onboard_skip">Skip</string>
+    <string name="onboard_next">Continue</string>
+    <string name="onboard_start">Get Started</string>
+
     <!-- Home Hub Screen -->
     <string name="home_hero_title">Upscale Images with On-Device AI</string>
     <string name="home_hero_desc">100% private and offline. No subscriptions, no cloud queues, zero ads.</string>
+    <string name="home_dropzone_title">Tap to Pick Photo</string>
+    <string name="home_dropzone_subtitle">Select any photo to enhance instantly</string>
     <string name="engine_status_active">● AI Engine: Real-ESRGAN Compact (Active)</string>
     <string name="engine_status_loading">○ AI Engine: Initializing…</string>
-    <string name="section_tools">AI Image Tools</string>
+    <string name="engine_pill_offline">100% Offline</string>
+    <string name="section_tools">AI Processing Tools</string>
+    <string name="section_tools_subtitle">Select a tailored pipeline for your photo</string>
     <string name="section_recent">Recent Creations</string>
-    <string name="recent_empty">No creations yet. Select a tool to start upscaling!</string>
+    <string name="recent_empty">No creations yet. Select a photo to begin!</string>
+    <string name="action_quick_pick">Pick Photo</string>
+    <string name="action_help_tutorial">Help &amp; Tutorial</string>
+    <string name="action_toggle_theme">Toggle Theme</string>
+
+    <!-- Dribbble Navigation & Filters -->
+    <string name="tab_enhance">Enhance</string>
+    <string name="tab_creations">Creations</string>
+    <string name="filter_all">All Tools</string>
+    <string name="filter_super_res">Super-Res</string>
+    <string name="filter_deblur">Deblur</string>
+    <string name="filter_studio">Pro Studio</string>
+    <string name="hero_cta_select">Select Photo  ›</string>
+
+    <!-- Bento Telemetry -->
+    <string name="bento_telemetry_title">100% Offline</string>
+    <string name="bento_telemetry_badge">On-Device NPU</string>
+    <string name="bento_telemetry_stat1">⚡ 0ms Cloud Latency</string>
+    <string name="bento_telemetry_stat2">🔒 Zero Data Upload</string>
+    <string name="bento_telemetry_stat3">🧠 Real-ESRGAN Compact</string>
 
     <!-- Feature Cards -->
     <string name="tool_super_res_title">AI Super-Resolution</string>
-    <string name="tool_super_res_desc">Enlarge photos from 1.5× up to 8× with natural anti-aliasing protection.</string>
+    <string name="tool_super_res_desc">Enlarge photos up to 8× with neural detail reconstruction and anti-aliasing.</string>
     <string name="tool_deblur_title">Photo Deblur &amp; Restore</string>
     <string name="tool_deblur_desc">Recover micro-edges, contrast, and clarity from camera shake or soft focus.</string>
     <string name="tool_pro_studio_title">Pro Tuning Studio</string>

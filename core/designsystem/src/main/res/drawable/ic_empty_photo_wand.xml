@@ -1,0 +1,36 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="80dp"
+    android:height="80dp"
+    android:viewportWidth="80"
+    android:viewportHeight="80">
+    <!-- Ambient Halo Background -->
+    <path
+        android:fillColor="#157C3AED"
+        android:pathData="M40,10 A30,30 0 1,1 39.99,10 Z" />
+    <!-- Stacked Bottom Photo Frame -->
+    <path
+        android:fillColor="#111625"
+        android:strokeColor="#232D42"
+        android:strokeWidth="2"
+        android:pathData="M18,30 L54,24 A4,4 0 0,1 58,28 L64,54 A4,4 0 0,1 60,58 L24,64 A4,4 0 0,1 20,60 L14,34 A4,4 0 0,1 18,30 Z" />
+    <!-- Main Photo Frame -->
+    <path
+        android:fillColor="#171F32"
+        android:strokeColor="#7C3AED"
+        android:strokeWidth="2.5"
+        android:pathData="M22,22 L58,22 A4,4 0 0,1 62,26 L62,58 A4,4 0 0,1 58,62 L22,62 A4,4 0 0,1 18,58 L18,26 A4,4 0 0,1 22,22 Z" />
+    <!-- Photo Graphic -->
+    <path
+        android:fillColor="#222C44"
+        android:pathData="M22,58 L36,40 L44,50 L50,44 L58,58 Z" />
+    <path
+        android:fillColor="#06B6D4"
+        android:pathData="M30,32 A4,4 0 1,1 29.99,32 Z" />
+    <!-- AI Starlight Sparks -->
+    <path
+        android:fillColor="#A78BFA"
+        android:pathData="M58,16 C58,19 55,22 52,22 C55,22 58,25 58,28 C58,25 61,22 64,22 C61,22 58,19 58,16 Z" />
+    <path
+        android:fillColor="#22D3EE"
+        android:pathData="M20,14 C20,16 18,18 16,18 C18,18 20,20 20,22 C20,20 22,18 24,18 C22,18 20,16 20,14 Z" />
+</vector>

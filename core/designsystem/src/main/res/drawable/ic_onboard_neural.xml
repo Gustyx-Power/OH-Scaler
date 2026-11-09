@@ -1,0 +1,49 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <!-- Glowing Halo -->
+    <path
+        android:fillColor="#1506B6D4"
+        android:pathData="M60,10 A50,50 0 1,1 59.99,10 Z" />
+    <path
+        android:fillColor="#157C3AED"
+        android:pathData="M60,25 A35,35 0 1,1 59.99,25 Z" />
+
+    <!-- AI Neural Chip Body -->
+    <path
+        android:fillColor="#111625"
+        android:strokeColor="#7C3AED"
+        android:strokeWidth="3"
+        android:pathData="M35,35 L85,35 A6,6 0 0,1 91,41 L91,91 A6,6 0 0,1 85,97 L35,97 A6,6 0 0,1 29,91 L29,41 A6,6 0 0,1 35,35 Z" />
+
+    <!-- Chip Pins - Top & Bottom -->
+    <path
+        android:strokeColor="#06B6D4"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M45,26 L45,34 M60,26 L60,34 M75,26 L75,34 M45,98 L45,106 M60,98 L60,106 M75,98 L75,106" />
+
+    <!-- Chip Pins - Left & Right -->
+    <path
+        android:strokeColor="#06B6D4"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M20,45 L28,45 M20,60 L28,60 M20,75 L28,75 M92,45 L100,45 M92,60 L100,60 M92,75 L100,75" />
+
+    <!-- Inner Core & Offline Privacy Shield -->
+    <path
+        android:fillColor="#171F32"
+        android:strokeColor="#22D3EE"
+        android:strokeWidth="2"
+        android:pathData="M60,48 L76,54 L76,68 C76,78 69,84 60,88 C51,84 44,78 44,68 L44,54 Z" />
+
+    <!-- Lock / Checkmark Emblem -->
+    <path
+        android:strokeColor="#10B981"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M52,67 L57,72 L68,61" />
+</vector>
