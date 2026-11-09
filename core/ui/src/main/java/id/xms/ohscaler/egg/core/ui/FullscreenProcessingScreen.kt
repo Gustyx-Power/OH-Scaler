@@ -50,6 +50,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -65,6 +66,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -86,6 +88,7 @@ fun FullscreenProcessingScreen(
     scaleFactor: Float = 2.0f,
     isDarkTheme: Boolean = isSystemInDarkTheme()
 ) {
+    val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
 
     // Live Elapsed Time Stopwatch
@@ -114,6 +117,15 @@ fun FullscreenProcessingScreen(
         else -> Triple(0, 0, 0f)
     }
 
+    // Live Hardware Telemetry Polling (Every 3 seconds dynamically from device)
+    var telemetry by remember { mutableStateOf(DeviceHardwareTelemetry.getTelemetry(context, elapsedSeconds, currentTile)) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(3000L)
+            telemetry = DeviceHardwareTelemetry.getTelemetry(context, elapsedSeconds, currentTile)
+        }
+    }
+
     val estimatedRemainingText = if (currentTile > 1 && totalTiles > currentTile) {
         val avgTimePerTile = elapsedSeconds / currentTile
         val remainingTiles = totalTiles - currentTile
@@ -130,7 +142,7 @@ fun FullscreenProcessingScreen(
     val targetH = (actualSrcH * scaleFactor).roundToInt()
     val scaleLabel = if (scaleFactor % 1f == 0f) "${scaleFactor.toInt()}×" else "${scaleFactor}×"
 
-    // Infinite animations for data flow (gentle & relaxed at 3200ms)
+    // Infinite animations for data flow (relaxed at 3200ms)
     val transition = rememberInfiniteTransition(label = "flowAnimation")
     val flowProgress1 by transition.animateFloat(
         initialValue = 0f,
@@ -361,7 +373,7 @@ fun FullscreenProcessingScreen(
                     }
                 }
 
-                // Middle Cluster: Heterogeneous Hardware (CPU, GPU, NPU, RAM)
+                // Middle Cluster: Heterogeneous Hardware with Real Telemetry Data
                 Column(
                     modifier = Modifier.fillMaxWidth(0.96f),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -381,7 +393,7 @@ fun FullscreenProcessingScreen(
                         )
                         Spacer(modifier = Modifier.width(5.dp))
                         Text(
-                            text = "HETEROGENEOUS AI CORE ACCELERATION",
+                            text = "HETEROGENEOUS HARDWARE TELEMETRY",
                             fontSize = 9.5.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF94A3B8),
@@ -389,15 +401,16 @@ fun FullscreenProcessingScreen(
                         )
                     }
 
-                    // 4 Hardware Units in a Fluid Row
+                    // 4 Hardware Units with REAL System Data (CPU GHz, GPU Model, NPU TOPS, RAM GB)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
+                        // 1. CPU with real clock speed & architecture
                         HardwareNodeCard(
                             name = "CPU",
-                            role = "ARM NEON",
-                            subRole = "YUV & Slicing",
+                            role = telemetry.cpuGhz,
+                            subRole = "${telemetry.cpuCores} Cores • ${telemetry.cpuModel}",
                             icon = Icons.Rounded.Memory,
                             accentColor = Color(0xFF38BDF8),
                             isActive = true,
@@ -405,9 +418,10 @@ fun FullscreenProcessingScreen(
                             modifier = Modifier.weight(1f)
                         )
 
+                        // 2. GPU with real hardware renderer model (e.g. Adreno 740 / Mali-G710)
                         HardwareNodeCard(
                             name = "GPU",
-                            role = "Vulkan Ops",
+                            role = telemetry.gpuName,
                             subRole = "Tensor Conv",
                             icon = Icons.Rounded.Bolt,
                             accentColor = Color(0xFFFBBF24),
@@ -416,10 +430,11 @@ fun FullscreenProcessingScreen(
                             modifier = Modifier.weight(1f)
                         )
 
+                        // 3. NPU with calculated Neural TOPS & live throughput
                         HardwareNodeCard(
                             name = "NPU",
-                            role = "Neural Core",
-                            subRole = "Inference AI",
+                            role = telemetry.npuTops,
+                            subRole = telemetry.npuThroughputGflops,
                             icon = Icons.Rounded.AutoAwesome,
                             accentColor = Color(0xFFF472B6),
                             isActive = true,
@@ -427,10 +442,11 @@ fun FullscreenProcessingScreen(
                             modifier = Modifier.weight(1f)
                         )
 
+                        // 4. RAM with real used/total system GB and app heap MB
                         HardwareNodeCard(
                             name = "RAM",
-                            role = "Zero-OOM",
-                            subRole = "Tile Stream",
+                            role = "${telemetry.ramUsedGb}/${telemetry.ramTotalGb}GB",
+                            subRole = "App: ${telemetry.appRamMb}MB • ${telemetry.freeRamGb}G Free",
                             icon = Icons.Rounded.Storage,
                             accentColor = Color(0xFF34D399),
                             isActive = true,
@@ -440,7 +456,7 @@ fun FullscreenProcessingScreen(
                     }
                 }
 
-                // Fluid Connector 2 (Middle Hardware Cluster -> Target Output Node - Relaxed 3200ms)
+                // Fluid Connector 2 (Middle Hardware Cluster -> Target Node - Relaxed 3200ms)
                 Canvas(
                     modifier = Modifier
                         .fillMaxWidth(0.92f)
@@ -568,11 +584,13 @@ fun FullscreenProcessingScreen(
             Spacer(modifier = Modifier.height(14.dp))
 
             // ================================================================
-            // 3. GitHub Contribution Tile Matrix (Block-by-Block Tile Completion)
+            // 3. Dynamic Tile Contribution Matrix (Exact Aspect Grid from Photo Dimensions)
             // ================================================================
-            TileContributionMatrix(
+            DynamicTileMatrix(
                 currentTile = currentTile,
                 totalTiles = totalTiles,
+                sourceWidth = actualSrcW,
+                sourceHeight = actualSrcH,
                 activeGlow = hardwareGlow,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -791,19 +809,38 @@ fun FullscreenProcessingScreen(
 }
 
 @Composable
-private fun TileContributionMatrix(
+private fun DynamicTileMatrix(
     currentTile: Int,
     totalTiles: Int,
+    sourceWidth: Int,
+    sourceHeight: Int,
     activeGlow: Float,
     modifier: Modifier = Modifier
 ) {
     val displayTotal = totalTiles.coerceAtLeast(1)
     val displayCurrent = currentTile.coerceIn(0, displayTotal)
 
-    // Calculate grid dimensions matching GitHub commit heatmap style
-    val cols = if (displayTotal <= 32) 10 else if (displayTotal <= 60) 15 else 20
-    val rows = ((displayTotal + cols - 1) / cols).coerceIn(2, 5)
-    val totalCells = cols * rows
+    // Calculate exact dynamic grid layout matching the 256px tile slicing of the image
+    val (cols, rows) = remember(sourceWidth, sourceHeight, displayTotal) {
+        if (sourceWidth > 0 && sourceHeight > 0) {
+            val c = ((sourceWidth + 255) / 256).coerceAtLeast(1)
+            val r = ((sourceHeight + 255) / 256).coerceAtLeast(1)
+            val singlePass = c * r
+            if (displayTotal > 0 && displayTotal != singlePass) {
+                // Cascaded 16x pass or custom scale
+                val ratio = sourceWidth.toFloat() / sourceHeight.toFloat()
+                val estCols = kotlin.math.sqrt(displayTotal * ratio).roundToInt().coerceIn(3, 20)
+                val estRows = ((displayTotal + estCols - 1) / estCols).coerceAtLeast(1)
+                Pair(estCols, estRows)
+            } else {
+                Pair(c.coerceIn(1, 24), r.coerceIn(1, 24))
+            }
+        } else {
+            val estCols = kotlin.math.sqrt(displayTotal * 1.33f).roundToInt().coerceIn(3, 20)
+            val estRows = ((displayTotal + estCols - 1) / estCols).coerceAtLeast(1)
+            Pair(estCols, estRows)
+        }
+    }
 
     Box(
         modifier = modifier
@@ -813,7 +850,7 @@ private fun TileContributionMatrix(
             .padding(horizontal = 14.dp, vertical = 10.dp)
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            // Header Row
+            // Header Row: Grid Dimensions & Completed Tile Counter
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -830,7 +867,7 @@ private fun TileContributionMatrix(
                         modifier = Modifier.size(13.dp)
                     )
                     Text(
-                        text = "TILE CONTRIBUTION MATRIX",
+                        text = "DYNAMIC TILE MATRIX (${cols}×${rows})",
                         fontSize = 9.5.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF94A3B8),
@@ -846,75 +883,77 @@ private fun TileContributionMatrix(
                 )
             }
 
-            // GitHub Commit Blocks Canvas
+            // Dynamic Sized Canvas matching exact rows & columns
+            val cellHeightDp = (180 / rows).coerceIn(8, 20).dp
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height((rows * 10 + (rows - 1) * 3).dp)
+                    .height((rows * cellHeightDp.value + (rows - 1) * 3).dp)
             ) {
                 val availableW = size.width
                 val gap = 3.dp.toPx()
-                val cellSize = (availableW - (cols - 1) * gap) / cols
+                val calculatedCell = (availableW - (cols - 1) * gap) / cols
+                val cellSize = minOf(calculatedCell, 22.dp.toPx())
+                val totalGridWidth = cols * cellSize + (cols - 1) * gap
+                val startXOffset = (availableW - totalGridWidth) / 2f
                 val cornerRadius = CornerRadius(2.2.dp.toPx(), 2.2.dp.toPx())
 
-                for (idx in 0 until totalCells) {
+                for (idx in 0 until displayTotal) {
                     val r = idx / cols
                     val c = idx % cols
-                    val x = c * (cellSize + gap)
+                    val x = startXOffset + c * (cellSize + gap)
                     val y = r * (cellSize + gap)
                     val cellRect = Rect(Offset(x, y), Size(cellSize, cellSize))
 
-                    if (idx < displayTotal) {
-                        when {
-                            idx < displayCurrent -> {
-                                // Completed tile: GitHub style vibrant emerald block
-                                drawRoundRect(
-                                    color = Color(0xFF10B981),
-                                    topLeft = cellRect.topLeft,
-                                    size = cellRect.size,
-                                    cornerRadius = cornerRadius
-                                )
-                                drawRoundRect(
-                                    color = Color(0xFF34D399),
-                                    topLeft = cellRect.topLeft,
-                                    size = cellRect.size,
-                                    cornerRadius = cornerRadius,
-                                    style = Stroke(width = 0.8.dp.toPx())
-                                )
-                            }
-                            idx == displayCurrent -> {
-                                // In-progress tile: Glowing pulsating amber block
-                                val pulseColor = Color(0xFFFBBF24)
-                                drawRoundRect(
-                                    color = pulseColor.copy(alpha = 0.35f + 0.45f * activeGlow),
-                                    topLeft = cellRect.topLeft,
-                                    size = cellRect.size,
-                                    cornerRadius = cornerRadius
-                                )
-                                drawRoundRect(
-                                    color = pulseColor,
-                                    topLeft = cellRect.topLeft,
-                                    size = cellRect.size,
-                                    cornerRadius = cornerRadius,
-                                    style = Stroke(width = 1.2.dp.toPx())
-                                )
-                            }
-                            else -> {
-                                // Pending tile: Empty hollow dark square
-                                drawRoundRect(
-                                    color = Color(0x1A334155),
-                                    topLeft = cellRect.topLeft,
-                                    size = cellRect.size,
-                                    cornerRadius = cornerRadius
-                                )
-                                drawRoundRect(
-                                    color = Color(0x26FFFFFF),
-                                    topLeft = cellRect.topLeft,
-                                    size = cellRect.size,
-                                    cornerRadius = cornerRadius,
-                                    style = Stroke(width = 0.8.dp.toPx())
-                                )
-                            }
+                    when {
+                        idx < displayCurrent -> {
+                            // Completed tile: GitHub style vibrant emerald block
+                            drawRoundRect(
+                                color = Color(0xFF10B981),
+                                topLeft = cellRect.topLeft,
+                                size = cellRect.size,
+                                cornerRadius = cornerRadius
+                            )
+                            drawRoundRect(
+                                color = Color(0xFF34D399),
+                                topLeft = cellRect.topLeft,
+                                size = cellRect.size,
+                                cornerRadius = cornerRadius,
+                                style = Stroke(width = 0.8.dp.toPx())
+                            )
+                        }
+                        idx == displayCurrent -> {
+                            // In-progress tile: Glowing pulsating amber block
+                            val pulseColor = Color(0xFFFBBF24)
+                            drawRoundRect(
+                                color = pulseColor.copy(alpha = 0.35f + 0.45f * activeGlow),
+                                topLeft = cellRect.topLeft,
+                                size = cellRect.size,
+                                cornerRadius = cornerRadius
+                            )
+                            drawRoundRect(
+                                color = pulseColor,
+                                topLeft = cellRect.topLeft,
+                                size = cellRect.size,
+                                cornerRadius = cornerRadius,
+                                style = Stroke(width = 1.2.dp.toPx())
+                            )
+                        }
+                        else -> {
+                            // Pending tile: Empty hollow dark square
+                            drawRoundRect(
+                                color = Color(0x1A334155),
+                                topLeft = cellRect.topLeft,
+                                size = cellRect.size,
+                                cornerRadius = cornerRadius
+                            )
+                            drawRoundRect(
+                                color = Color(0x26FFFFFF),
+                                topLeft = cellRect.topLeft,
+                                size = cellRect.size,
+                                cornerRadius = cornerRadius,
+                                style = Stroke(width = 0.8.dp.toPx())
+                            )
                         }
                     }
                 }
@@ -974,12 +1013,14 @@ private fun HardwareNodeCard(
                 text = role,
                 fontSize = 8.5.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = accentColor
+                color = accentColor,
+                maxLines = 1
             )
             Text(
                 text = subRole,
                 fontSize = 7.5.sp,
-                color = Color(0xFF94A3B8)
+                color = Color(0xFF94A3B8),
+                maxLines = 1
             )
         }
     }
