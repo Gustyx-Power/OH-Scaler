@@ -16,8 +16,10 @@ val DarkSurfaceContainer = Color(0xFF1A1D27)
 val DarkSurfaceContainerHigh = Color(0xFF222634)
 val DarkSurfaceContainerHighest = Color(0xFF2C3142)
 
-val DarkGlassSurface = Color(0xD4181B26)       // Android 17 diffuse matte slate (83% alpha, zero specular)
-val DarkGlassBorder = Color(0x1AFFFFFF)        // Flat subtle 10% white outline (no specular highlight)
+val DarkGlassSurface = Color(0x94161922)       // Android 17 frosted glass tint (58% alpha matching SystemUI 0.58f)
+val DarkGlassSurfaceFallback = Color(0xF2161922) // Android 17 fallback when blur is disabled
+val DarkGlassBorder = Color(0x26FFFFFF)        // Subtle 15% white outline
+val DarkGlassSpecularBorder = listOf(Color(0x38FFFFFF), Color(0x10FFFFFF)) // Specular rim gradient (top sheen to soft bottom)
 
 val DarkPrimary = Color(0xFFA8C7FA)            // Android 17 Pale Ice Blue
 val DarkOnPrimary = Color(0xFF0F2F4C)
@@ -45,8 +47,10 @@ val LightSurfaceContainer = Color(0xFFDAE2ED)
 val LightSurfaceContainerHigh = Color(0xFFCFDAE7)
 val LightSurfaceContainerHighest = Color(0xFFC3D1E0)
 
-val LightGlassSurface = Color(0xE0FFFFFF)      // Android 17 diffuse milk glass (88% alpha, zero specular)
-val LightGlassBorder = Color(0x1F334155)       // Flat subtle 12% slate outline (no specular highlight)
+val LightGlassSurface = Color(0x9EFFFFFF)      // Android 17 frosted milk glass tint (62% alpha matching SystemUI 0.58f-0.62f)
+val LightGlassSurfaceFallback = Color(0xF8FFFFFF) // Android 17 fallback when blur is disabled
+val LightGlassBorder = Color(0x24334155)       // Subtle 14% slate outline
+val LightGlassSpecularBorder = listOf(Color(0x80FFFFFF), Color(0x24334155)) // Crisp specular top rim, soft slate bottom
 
 val LightPrimary = Color(0xFF355375)           // Android 17 Steel Slate Blue
 val LightOnPrimary = Color(0xFFFFFFFF)

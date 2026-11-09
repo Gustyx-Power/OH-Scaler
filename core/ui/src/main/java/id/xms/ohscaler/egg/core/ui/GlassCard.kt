@@ -18,19 +18,25 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import id.xms.ohscaler.egg.core.designsystem.BorderDark
-import id.xms.ohscaler.egg.core.designsystem.SurfaceDark
-import id.xms.ohscaler.egg.core.designsystem.SurfaceVariantDark
+import id.xms.ohscaler.egg.core.designsystem.DarkGlassBorder
+import id.xms.ohscaler.egg.core.designsystem.DarkGlassSurface
 
+/**
+ * Android 17 Glass Card component.
+ * Features a semi-translucent frosted glass fill, optional AGSL grain micro-texture, specular rim lighting border, and ripple feedback.
+ */
 @Composable
 fun GlassCard(
     modifier: Modifier = Modifier,
     shape: Shape = RoundedCornerShape(20.dp),
-    borderColor: Color = BorderDark,
+    borderColor: Color = DarkGlassBorder,
+    borderBrush: Brush? = null,
     borderWidth: Dp = 1.dp,
     backgroundBrush: Brush? = null,
-    backgroundColor: Color = SurfaceDark,
+    backgroundColor: Color = DarkGlassSurface,
     contentPadding: Dp = 16.dp,
+    enableGrain: Boolean = false,
+    grainIntensity: Float = 0.035f,
     onClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit
 ) {
@@ -44,10 +50,22 @@ fun GlassCard(
         Modifier
     }
 
-    val bgModifier = if (backgroundBrush != null) {
-        Modifier.background(backgroundBrush)
+    val grainBrush = if (enableGrain && backgroundBrush == null) {
+        rememberAndroid17GrainBrush(backgroundColor, grainIntensity)
     } else {
-        Modifier.background(backgroundColor)
+        null
+    }
+
+    val bgModifier = when {
+        backgroundBrush != null -> Modifier.background(backgroundBrush)
+        grainBrush != null -> Modifier.background(grainBrush)
+        else -> Modifier.background(backgroundColor)
+    }
+
+    val borderModifier = if (borderBrush != null) {
+        Modifier.border(borderWidth, borderBrush, shape)
+    } else {
+        Modifier.border(borderWidth, borderColor, shape)
     }
 
     Box(
@@ -55,7 +73,7 @@ fun GlassCard(
             .clip(shape)
             .then(clickableModifier)
             .then(bgModifier)
-            .border(borderWidth, borderColor, shape)
+            .then(borderModifier)
             .padding(contentPadding),
         content = content
     )
