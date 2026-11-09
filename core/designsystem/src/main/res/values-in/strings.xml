@@ -5,12 +5,17 @@
     <!-- Home Screen -->
     <string name="home_hero_title">Tingkatkan Resolusi Foto dengan AI Lokal</string>
     <string name="home_hero_desc">100% privat dan offline. Tanpa langganan, tanpa antrean cloud, dan tanpa iklan.</string>
+    <string name="engine_status_active">● AI Engine: Real-ESRGAN Compact (Aktif)</string>
+    <string name="engine_status_loading">○ AI Engine: Menyiapkan…</string>
     <string name="action_select_image">Pilih Foto</string>
     <string name="action_change_photo">Ganti Foto</string>
     <string name="action_upscale_now">Mulai Upscale</string>
     <string name="scale_factor_title">Rasio Pembesaran</string>
     <string name="scale_2x">2× (Seimbang)</string>
     <string name="scale_4x">4× (Ultra Tajam)</string>
+    <string name="enhancement_mode_title">Mode Penajaman &amp; Deblur</string>
+    <string name="mode_natural">Alami</string>
+    <string name="mode_ultra_deblur">Ultra Deblur</string>
 
     <!-- Progress Card -->
     <string name="processing_title">Meningkatkan Resolusi Citra…</string>

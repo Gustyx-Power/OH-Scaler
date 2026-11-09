@@ -53,6 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import id.xms.ohscaler.egg.core.ai.EnhancementMode
 import id.xms.ohscaler.egg.core.ai.UpscaleProgress
 import id.xms.ohscaler.egg.core.designsystem.BorderDark
 import id.xms.ohscaler.egg.core.designsystem.CyanAccent
@@ -199,6 +200,33 @@ fun HomeScreen(
                                 color = TextSecondary,
                                 lineHeight = 18.sp
                             )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            // AI Engine Status Indicator
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (uiState.isEngineReady) Color(0x1F10B981) else Color(0x1FFFFFFF))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(RoundedCornerShape(3.dp))
+                                        .background(if (uiState.isEngineReady) Color(0xFF10B981) else TextMuted)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (uiState.isEngineReady) {
+                                        stringResource(id.xms.ohscaler.egg.core.designsystem.R.string.engine_status_active)
+                                    } else {
+                                        stringResource(id.xms.ohscaler.egg.core.designsystem.R.string.engine_status_loading)
+                                    },
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = if (uiState.isEngineReady) Color(0xFF10B981) else TextMuted
+                                )
+                            }
                         }
                     }
 
@@ -273,7 +301,7 @@ fun HomeScreen(
                                 contentDescription = null,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(200.dp)
+                                    .height(160.dp)
                                     .clip(RoundedCornerShape(16.dp)),
                                 contentScale = ContentScale.Fit
                             )
@@ -337,6 +365,56 @@ fun HomeScreen(
                                 )
                             }
 
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // Enhancement & Deblur Mode Selector Chips
+                            Text(
+                                text = stringResource(id.xms.ohscaler.egg.core.designsystem.R.string.enhancement_mode_title),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = TextMuted
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                FilterChip(
+                                    selected = uiState.enhancementMode == EnhancementMode.Natural,
+                                    onClick = { viewModel.setEnhancementMode(EnhancementMode.Natural) },
+                                    label = {
+                                        Text(
+                                            text = stringResource(id.xms.ohscaler.egg.core.designsystem.R.string.mode_natural),
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    },
+                                    modifier = Modifier.weight(1f).height(44.dp),
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = CyanAccent,
+                                        selectedLabelColor = ObsidianBlack,
+                                        containerColor = SurfaceVariantDark,
+                                        labelColor = TextSecondary
+                                    )
+                                )
+                                FilterChip(
+                                    selected = uiState.enhancementMode == EnhancementMode.UltraDeblur,
+                                    onClick = { viewModel.setEnhancementMode(EnhancementMode.UltraDeblur) },
+                                    label = {
+                                        Text(
+                                            text = stringResource(id.xms.ohscaler.egg.core.designsystem.R.string.mode_ultra_deblur),
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    },
+                                    modifier = Modifier.weight(1f).height(44.dp),
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = CyanAccent,
+                                        selectedLabelColor = ObsidianBlack,
+                                        containerColor = SurfaceVariantDark,
+                                        labelColor = TextSecondary
+                                    )
+                                )
+                            }
+
                             Spacer(modifier = Modifier.height(20.dp))
 
                             // Action Buttons
@@ -384,6 +462,7 @@ fun HomeScreen(
                             }
                         }
                     }
+                    Spacer(modifier = Modifier.height(32.dp))
                 }
             }
 

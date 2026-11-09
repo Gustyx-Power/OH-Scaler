@@ -5,12 +5,17 @@
     <!-- Home Screen -->
     <string name="home_hero_title">Upscale Images with On-Device AI</string>
     <string name="home_hero_desc">100% private and offline. No subscriptions, no cloud queues, zero ads.</string>
+    <string name="engine_status_active">● AI Engine: Real-ESRGAN Compact (Active)</string>
+    <string name="engine_status_loading">○ AI Engine: Initializing…</string>
     <string name="action_select_image">Select Photo</string>
     <string name="action_change_photo">Change Photo</string>
     <string name="action_upscale_now">Upscale Now</string>
     <string name="scale_factor_title">Scale Factor</string>
     <string name="scale_2x">2× (Balanced)</string>
     <string name="scale_4x">4× (Ultra Sharp)</string>
+    <string name="enhancement_mode_title">Deblur &amp; Detail Mode</string>
+    <string name="mode_natural">Natural</string>
+    <string name="mode_ultra_deblur">Ultra Deblur</string>
 
     <!-- Progress Card -->
     <string name="processing_title">Upscaling Image…</string>

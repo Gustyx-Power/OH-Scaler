@@ -5,24 +5,28 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import id.xms.ohscaler.egg.core.ai.EnhancementMode
 import id.xms.ohscaler.egg.core.ai.FallbackUpscalerEngine
 import id.xms.ohscaler.egg.core.ai.OnnxUpscalerEngine
 import id.xms.ohscaler.egg.core.ai.UpscaleProgress
-import id.xms.ohscaler.egg.core.ai.UpscalerEngine
 import id.xms.ohscaler.egg.core.storage.ImageDecoderHelper
 import id.xms.ohscaler.egg.core.storage.ScopedStorageManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class UpscalerUiState(
     val sourceUri: Uri? = null,
     val sourceBitmap: Bitmap? = null,
     val upscaledBitmap: Bitmap? = null,
     val scaleFactor: Int = 2,
+    val enhancementMode: EnhancementMode = EnhancementMode.Natural,
+    val isEngineReady: Boolean = false,
     val progress: UpscaleProgress = UpscaleProgress.Idle,
     val isSaving: Boolean = false,
     val savedUri: Uri? = null,
@@ -35,11 +39,35 @@ class UpscalerViewModel(application: Application) : AndroidViewModel(application
     val uiState: StateFlow<UpscalerUiState> = _uiState.asStateFlow()
 
     private val storageManager = ScopedStorageManager(application)
-    private var upscalerEngine: UpscalerEngine = OnnxUpscalerEngine(
+    private val onnxEngine = OnnxUpscalerEngine(
         fallbackEngine = FallbackUpscalerEngine()
     )
 
     private var upscaleJob: Job? = null
+
+    init {
+        loadModelAsync()
+    }
+
+    private fun loadModelAsync() {
+        viewModelScope.launch {
+            val ready = withContext(Dispatchers.IO) {
+                try {
+                    val context = getApplication<Application>()
+                    val modelName = "models/realesr-general-x4v3.onnx"
+                    context.assets.open(modelName).use { inputStream ->
+                        val bytes = inputStream.readBytes()
+                        onnxEngine.loadModel(bytes)
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("OHScaler", "Error loading ONNX model from assets", e)
+                    false
+                }
+            }
+            _uiState.update { it.copy(isEngineReady = ready) }
+            android.util.Log.d("OHScaler", "ONNX Model loaded into engine. isEngineReady=$ready")
+        }
+    }
 
     fun onImageSelected(uri: Uri) {
         android.util.Log.d("OHScaler", "onImageSelected called with: $uri")
@@ -67,16 +95,23 @@ class UpscalerViewModel(application: Application) : AndroidViewModel(application
         _uiState.update { it.copy(scaleFactor = scale) }
     }
 
+    fun setEnhancementMode(mode: EnhancementMode) {
+        _uiState.update { it.copy(enhancementMode = mode) }
+    }
+
     fun startUpscale() {
         val bitmap = _uiState.value.sourceBitmap ?: return
         val scale = _uiState.value.scaleFactor
+        val mode = _uiState.value.enhancementMode
+        android.util.Log.d("OHScaler", "startUpscale CALLED! bitmap=${bitmap.width}x${bitmap.height}, scale=$scale, mode=$mode")
 
         upscaleJob?.cancel()
         upscaleJob = viewModelScope.launch {
             try {
-                val result = upscalerEngine.upscale(
+                val result = onnxEngine.upscale(
                     sourceBitmap = bitmap,
                     scaleFactor = scale,
+                    enhancementMode = mode,
                     onProgress = { progress ->
                         _uiState.update { it.copy(progress = progress) }
                     }
@@ -120,7 +155,14 @@ class UpscalerViewModel(application: Application) : AndroidViewModel(application
         upscaleJob?.cancel()
         upscaleJob = null
         _uiState.update {
-            UpscalerUiState()
+            it.copy(
+                sourceUri = null,
+                sourceBitmap = null,
+                upscaledBitmap = null,
+                progress = UpscaleProgress.Idle,
+                savedUri = null,
+                errorMessage = null
+            )
         }
     }
 }
