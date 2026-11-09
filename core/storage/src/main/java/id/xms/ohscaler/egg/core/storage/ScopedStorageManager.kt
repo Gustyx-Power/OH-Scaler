@@ -5,6 +5,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import kotlinx.coroutines.Dispatchers
@@ -14,15 +15,32 @@ class ScopedStorageManager(private val context: Context) {
 
     suspend fun saveBitmapToGallery(
         bitmap: Bitmap,
-        filenamePrefix: String = "OH_SCALER"
+        filenamePrefix: String = "OH_SCALER",
+        mimeType: String = "image/png",
+        quality: Int = 100
     ): Uri? = withContext(Dispatchers.IO) {
         val resolver = context.contentResolver
         val timestamp = System.currentTimeMillis()
-        val displayName = "${filenamePrefix}_$timestamp.png"
+
+        val (ext, compressFormat) = when (mimeType) {
+            "image/jpeg" -> Pair("jpg", Bitmap.CompressFormat.JPEG)
+            "image/webp" -> {
+                val format = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    if (quality >= 100) Bitmap.CompressFormat.WEBP_LOSSLESS else Bitmap.CompressFormat.WEBP_LOSSY
+                } else {
+                    @Suppress("DEPRECATION")
+                    Bitmap.CompressFormat.WEBP
+                }
+                Pair("webp", format)
+            }
+            else -> Pair("png", Bitmap.CompressFormat.PNG)
+        }
+
+        val displayName = "${filenamePrefix}_$timestamp.$ext"
 
         val contentValues = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, displayName)
-            put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+            put(MediaStore.Images.Media.MIME_TYPE, mimeType)
             put(
                 MediaStore.Images.Media.RELATIVE_PATH,
                 "${Environment.DIRECTORY_PICTURES}/OH-Scaler"
@@ -35,7 +53,7 @@ class ScopedStorageManager(private val context: Context) {
 
         try {
             resolver.openOutputStream(imageUri)?.use { outputStream ->
-                if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)) {
+                if (!bitmap.compress(compressFormat, quality.coerceIn(10, 100), outputStream)) {
                     resolver.delete(imageUri, null, null)
                     return@withContext null
                 }
@@ -46,9 +64,17 @@ class ScopedStorageManager(private val context: Context) {
             resolver.update(imageUri, contentValues, null, null)
             imageUri
         } catch (e: Exception) {
+            android.util.Log.e("OHScaler", "Failed saving bitmap to gallery", e)
             resolver.delete(imageUri, null, null)
             null
         }
+    }
+
+    suspend fun saveBitmapToGallery(
+        bitmap: Bitmap,
+        filenamePrefix: String = "OH_SCALER"
+    ): Uri? {
+        return saveBitmapToGallery(bitmap, filenamePrefix, "image/png", 100)
     }
 
     suspend fun loadRecentCreations(limit: Int = 10): List<Uri> = withContext(Dispatchers.IO) {

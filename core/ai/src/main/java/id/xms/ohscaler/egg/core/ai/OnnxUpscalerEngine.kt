@@ -10,42 +10,27 @@ import kotlinx.coroutines.withContext
 import java.nio.FloatBuffer
 import kotlin.coroutines.coroutineContext
 
-/**
- * OnnxUpscalerEngine runs super-resolution models (e.g. Real-ESRGAN Compact v3)
- * on Android hardware accelerators via ONNX Runtime Mobile and CPU SIMD (NEON/AVX2).
- */
 class OnnxUpscalerEngine(
-    private var modelBytes: ByteArray? = null,
-    private val tileProcessor: TileProcessor = TileProcessor(tileSize = 256, overlapPadding = 16),
-    private val fallbackEngine: FallbackUpscalerEngine = FallbackUpscalerEngine(tileProcessor)
+    private val fallbackEngine: UpscalerEngine,
+    private val tileProcessor: TileProcessor = TileProcessor(tileSize = 256, overlapPadding = 16)
 ) : UpscalerEngine {
 
-    override val name: String = "ONNX Neural Super-Resolution (Real-ESRGAN Compact v3)"
-
-    override val isNeuralActive: Boolean
-        get() = ortSession != null
+    override val name: String = "Real-ESRGAN Compact ONNX"
+    override val isNeuralActive: Boolean get() = isModelLoaded
 
     private var ortEnv: OrtEnvironment? = null
     private var ortSession: OrtSession? = null
 
-    init {
-        initSession()
-    }
+    val isModelLoaded: Boolean
+        get() = ortSession != null
 
-    @Synchronized
     fun loadModel(bytes: ByteArray): Boolean {
-        this.modelBytes = bytes
-        closeSession()
-        return initSession()
-    }
-
-    private fun initSession(): Boolean {
-        val bytes = modelBytes ?: return false
-        if (bytes.isEmpty()) return false
         return try {
             val env = OrtEnvironment.getEnvironment()
             val options = OrtSession.SessionOptions().apply {
-                setIntraOpNumThreads(4)
+                val cores = Runtime.getRuntime().availableProcessors().coerceIn(2, 4)
+                setIntraOpNumThreads(cores)
+                setInterOpNumThreads(cores)
                 setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
             }
             ortEnv = env
@@ -75,7 +60,6 @@ class OnnxUpscalerEngine(
         val env = ortEnv
 
         if (session == null || env == null) {
-            // Gracefully use fallback engine if model is not yet loaded
             return@withContext fallbackEngine.upscale(sourceBitmap, config, onProgress)
         }
 
@@ -83,23 +67,94 @@ class OnnxUpscalerEngine(
         android.util.Log.d(
             "OHScaler",
             "OnnxUpscalerEngine.upscale starting! ${sourceBitmap.width}x${sourceBitmap.height}, " +
-                    "scale=${config.scaleFactor}x, sharpness=${config.sharpness}, AA=${config.antiAliasing}"
+                    "scale=${config.scaleFactor}x, sharpness=${config.sharpness}, AA=${config.antiAliasing}, " +
+                    "deblur=${config.preDeblurEnabled} (r=${config.deblurRadius}, c=${config.clarityStrength})"
         )
         onProgress(UpscaleProgress.ReadingPixels(sourceBitmap.width, sourceBitmap.height))
 
         try {
-            val result = tileProcessor.processTiled(
-                sourceBitmap = sourceBitmap,
-                scaleFactor = config.scaleFactor,
-                onProgress = { current, total, progress ->
-                    android.util.Log.d("OHScaler", "Tile progress: $current/$total ($progress)")
-                    onProgress(UpscaleProgress.Processing(current, total, progress))
-                },
-                transformTile = { tile ->
-                    coroutineContext.ensureActive()
-                    runTileInference(env, session, tile, config)
+            val faceRects = if (config.faceAwareEnabled) {
+                FaceDetectorHelper.detectFaces(sourceBitmap)
+            } else {
+                emptyList()
+            }
+
+            // Stage 1: Optional Pre-Deblurring (Crucial for out-of-focus portraits)
+            val inputToUse = if (config.preDeblurEnabled && config.clarityStrength > 0.01f) {
+                MultiScaleDeblur.applyDeepDeblur(
+                    sourceBitmap,
+                    deblurRadius = config.deblurRadius,
+                    clarityStrength = config.clarityStrength,
+                    antiHaloClamp = config.antiHaloClamp,
+                    faceRects = faceRects
+                )
+            } else {
+                sourceBitmap
+            }
+
+            // Direct 1x mode: return enhanced image without super-resolution enlargement
+            if (config.scaleFactor <= 1.05f) {
+                val tuned = ImageEnhancer.applyDetailTuning(
+                    inputToUse,
+                    sharpness = config.sharpness,
+                    antiAliasing = config.antiAliasing
+                )
+                val duration = System.currentTimeMillis() - startTime
+                onProgress(UpscaleProgress.Completed(tuned, duration))
+                if (inputToUse != sourceBitmap && !inputToUse.isRecycled && inputToUse != tuned) {
+                    inputToUse.recycle()
                 }
-            )
+                return@withContext tuned
+            }
+
+            // Stage 2: Neural AI Super-Resolution (Single-pass vs 2-Pass Cascaded for 16x)
+            val result = if (config.scaleFactor >= 15.9f) {
+                // 16x Cascaded: Pass 1 (4x) then Pass 2 (4x)
+                val pass1Config = config.copy(scaleFactor = 4.0f, sharpness = 0.0f, antiAliasing = 0.0f)
+                val pass1 = tileProcessor.processTiled(
+                    sourceBitmap = inputToUse,
+                    scaleFactor = 4.0f,
+                    onProgress = { current, total, progress ->
+                        onProgress(UpscaleProgress.Processing(current, total * 2, progress * 0.5f))
+                    },
+                    transformTile = { tile ->
+                        coroutineContext.ensureActive()
+                        runTileInference(env, session, tile, pass1Config)
+                    }
+                )
+
+                val pass2 = tileProcessor.processTiled(
+                    sourceBitmap = pass1,
+                    scaleFactor = 4.0f,
+                    onProgress = { current, total, progress ->
+                        onProgress(UpscaleProgress.Processing(total + current, total * 2, 0.5f + progress * 0.5f))
+                    },
+                    transformTile = { tile ->
+                        coroutineContext.ensureActive()
+                        runTileInference(env, session, tile, config.copy(scaleFactor = 4.0f))
+                    }
+                )
+
+                if (!pass1.isRecycled) pass1.recycle()
+                pass2
+            } else {
+                // Standard Single-Pass Tiling (1.5x, 2x, 3x, 4x, 8x)
+                tileProcessor.processTiled(
+                    sourceBitmap = inputToUse,
+                    scaleFactor = config.scaleFactor,
+                    onProgress = { current, total, progress ->
+                        onProgress(UpscaleProgress.Processing(current, total, progress))
+                    },
+                    transformTile = { tile ->
+                        coroutineContext.ensureActive()
+                        runTileInference(env, session, tile, config)
+                    }
+                )
+            }
+
+            if (inputToUse != sourceBitmap && !inputToUse.isRecycled) {
+                inputToUse.recycle()
+            }
 
             onProgress(UpscaleProgress.Stitching(1.0f))
             val duration = System.currentTimeMillis() - startTime
@@ -127,7 +182,6 @@ class OnnxUpscalerEngine(
         val pixels = IntArray(w * h)
         tile.getPixels(pixels, 0, w, 0, 0, w, h)
 
-        // Convert to NCHW float tensor [1, 3, H, W] in [0.0, 1.0]
         val channelSize = h * w
         val floatBuffer = FloatBuffer.allocate(1 * 3 * channelSize)
         val array = floatBuffer.array()
@@ -152,7 +206,7 @@ class OnnxUpscalerEngine(
         inputTensor.close()
 
         val outputTensor = results[0] as OnnxTensor
-        val outShape = outputTensor.info.shape // [1, 3, H_out, W_out]
+        val outShape = outputTensor.info.shape
         val outH = outShape[2].toInt()
         val outW = outShape[3].toInt()
 
@@ -178,10 +232,11 @@ class OnnxUpscalerEngine(
         rawTile4x.setPixels(outPixels, 0, outW, 0, 0, outW, outH)
 
         // Target scaling:
-        // Real-ESRGAN Compact output is 4x.
-        // For scaleFactor != 4.0f (e.g. 1.5x, 2.0x, 3.0x, 8.0x), rescale tile accordingly:
-        val targetW = (w * config.scaleFactor).toInt().coerceAtLeast(1)
-        val targetH = (h * config.scaleFactor).toInt().coerceAtLeast(1)
+        // Real-ESRGAN Compact native output is 4x.
+        // For non-4x (e.g. 1.5x, 2.0x, 3.0x, 8.0x), rescale tile:
+        val targetScale = if (config.scaleFactor >= 15.9f) 4.0f else config.scaleFactor
+        val targetW = (w * targetScale).toInt().coerceAtLeast(1)
+        val targetH = (h * targetScale).toInt().coerceAtLeast(1)
 
         val scaledTile = if (targetW != outW || targetH != outH) {
             val scaled = Bitmap.createScaledBitmap(rawTile4x, targetW, targetH, true)
@@ -193,7 +248,6 @@ class OnnxUpscalerEngine(
             rawTile4x
         }
 
-        // Apply custom detail tuning (Sharpness + Directional Anti-Aliasing)
         return if (config.sharpness > 0.01f || config.antiAliasing > 0.01f) {
             val tuned = ImageEnhancer.applyDetailTuning(
                 bitmap = scaledTile,
@@ -207,5 +261,22 @@ class OnnxUpscalerEngine(
         } else {
             scaledTile
         }
+    }
+
+    override suspend fun upscale(
+        sourceBitmap: Bitmap,
+        scaleFactor: Int,
+        enhancementMode: EnhancementMode,
+        onProgress: (UpscaleProgress) -> Unit
+    ): Bitmap {
+        val sharpness = if (enhancementMode == EnhancementMode.UltraDeblur) 0.85f else 0.4f
+        val aa = if (enhancementMode == EnhancementMode.UltraDeblur) 0.3f else 0.6f
+        val config = TuningConfig(
+            scaleFactor = scaleFactor.toFloat(),
+            sharpness = sharpness,
+            antiAliasing = aa,
+            preDeblurEnabled = enhancementMode == EnhancementMode.UltraDeblur
+        )
+        return upscale(sourceBitmap, config, onProgress)
     }
 }

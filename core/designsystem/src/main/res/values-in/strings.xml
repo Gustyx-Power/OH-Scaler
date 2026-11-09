@@ -3,51 +3,52 @@
     <string name="app_tagline">Super Resolusi Citra AI Offline</string>
 
     <!-- Onboarding Screen -->
-    <string name="onboard_title_1">100% On-Device &amp; Privat</string>
-    <string name="onboard_desc_1">Jalankan model AI neural langsung pada hardware ponsel Anda. Tanpa kirim data ke server cloud, tanpa antrean, dan tanpa pelacakan.</string>
-    <string name="onboard_title_2">Pulihkan Kejernihan &amp; Bebas Blur</string>
-    <string name="onboard_desc_2">Perbesar hingga 8× dengan Real-ESRGAN Compact. Rekonstruksi kontur tepian halus dan hilangkan gerigi piksel secara otomatis.</string>
+    <string name="onboard_title_1">100% Di Perangkat &amp; Privat</string>
+    <string name="onboard_desc_1">Jalankan model neural AI langsung pada perangkat. Nol data dikirim ke cloud, tanpa antrean, dan tanpa pelacakan.</string>
+    <string name="onboard_title_2">Pulihkan Kejernihan &amp; Deblur</string>
+    <string name="onboard_desc_2">Tingkatkan resolusi hingga 16× dengan Real-ESRGAN Compact. Rekonstruksi tepi halus dan hilangkan gerigi piksel dengan anti-aliasing cerdas.</string>
     <string name="onboard_title_3">Studio Interaktif &amp; Ekspor</string>
-    <string name="onboard_desc_3">Sesuaikan ketajaman secara real-time, periksa setiap piksel dengan slider komparasi 60 FPS, dan simpan langsung ke galeri foto.</string>
+    <string name="onboard_desc_3">Atur ketajaman secara real-time, periksa piksel dengan slider perbandingan terpisah, dan simpan langsung ke galeri.</string>
     <string name="onboard_skip">Lewati</string>
     <string name="onboard_next">Lanjut</string>
-    <string name="onboard_start">Mulai Sekarang</string>
+    <string name="onboard_start">Mulai</string>
 
-    <!-- Home Hub Screen -->
-    <string name="home_hero_title">Tingkatkan Resolusi Foto dengan AI Lokal</string>
-    <string name="home_hero_desc">100% privat dan offline. Tanpa langganan, tanpa antrean cloud, dan tanpa iklan.</string>
-    <string name="home_dropzone_title">Ketuk untuk Pilih Foto</string>
-    <string name="home_dropzone_subtitle">Pilih foto apa saja untuk diperbesar langsung</string>
+    <!-- Dribbble-Style Hero & Dropzone -->
+    <string name="home_hero_greeting">Kualitas Studio • Di Perangkat</string>
+    <string name="home_hero_title">Studio Super-Resolusi &amp; Deblur</string>
+    <string name="home_hero_desc">100% privat dan offline di perangkat Anda. Tanpa antrean cloud, tanpa langganan, dan tanpa iklan.</string>
+    <string name="home_dropzone_title">Pilih atau Seret Foto</string>
+    <string name="home_dropzone_subtitle">Pilih foto apa pun untuk ditingkatkan instan</string>
     <string name="engine_status_active">● AI Engine: Real-ESRGAN Compact (Aktif)</string>
     <string name="engine_status_loading">○ AI Engine: Menyiapkan…</string>
     <string name="engine_pill_offline">100% Offline</string>
     <string name="section_tools">Pilihan Utilitas AI</string>
-    <string name="section_tools_subtitle">Pilih pipeline yang paling sesuai untuk foto Anda</string>
+    <string name="section_tools_subtitle">Pilih pipeline yang disesuaikan untuk foto Anda</string>
     <string name="section_recent">Hasil Terakhir</string>
     <string name="recent_empty">Belum ada kreasi. Pilih foto untuk mulai!</string>
     <string name="action_quick_pick">Pilih Foto</string>
-    <string name="action_help_tutorial">Bantuan &amp; Tutorial</string>
+    <string name="action_help_tutorial">Bantuan &amp; Panduan</string>
     <string name="action_toggle_theme">Ganti Tema</string>
 
     <!-- Dribbble Navigation & Filters -->
     <string name="tab_enhance">Tingkatkan</string>
     <string name="tab_creations">Kreasi</string>
-    <string name="filter_all">Semua Alat</string>
+    <string name="filter_all">Semua</string>
     <string name="filter_super_res">Super-Res</string>
-    <string name="filter_deblur">Restorasi</string>
-    <string name="filter_studio">Studio Pro</string>
+    <string name="filter_deblur">Deblur</string>
+    <string name="filter_studio">Pro Studio</string>
     <string name="hero_cta_select">Pilih Foto  ›</string>
 
     <!-- Bento Telemetry -->
     <string name="bento_telemetry_title">100% Offline</string>
-    <string name="bento_telemetry_badge">NPU On-Device</string>
-    <string name="bento_telemetry_stat1">⚡ Latensi Cloud 0ms</string>
-    <string name="bento_telemetry_stat2">🔒 Tanpa Kirim Data</string>
-    <string name="bento_telemetry_stat3">🧠 Real-ESRGAN Lokal</string>
+    <string name="bento_telemetry_badge">NPU Lokal</string>
+    <string name="bento_telemetry_stat1">⚡ 0ms Latensi Cloud</string>
+    <string name="bento_telemetry_stat2">🔒 Nol Unggah Data</string>
+    <string name="bento_telemetry_stat3">🧠 Real-ESRGAN Compact</string>
 
     <!-- Feature Cards -->
     <string name="tool_super_res_title">AI Super-Resolution</string>
-    <string name="tool_super_res_desc">Perbesar foto hingga 8× dengan rekonstruksi detail neural dan pelindung anti-gerigi.</string>
+    <string name="tool_super_res_desc">Perbesar foto hingga 16× dengan rekonstruksi detail neural dan anti-aliasing.</string>
     <string name="tool_deblur_title">Restorasi &amp; Penajaman Foto</string>
     <string name="tool_deblur_desc">Pulihkan ketajaman kontur tepi dari keburaman atau guncangan kamera.</string>
     <string name="tool_pro_studio_title">Pro Tuning Studio</string>
@@ -55,15 +56,45 @@
 
     <!-- Studio Screen -->
     <string name="studio_title">Studio Penyuntingan</string>
+    <string name="studio_super_res_title">Studio AI Super-Resolution</string>
+    <string name="studio_deblur_title">Restorasi &amp; Penajaman Wajah</string>
+    <string name="studio_pro_title">Pro Creative Workstation</string>
+
     <string name="action_select_image">Pilih Foto</string>
     <string name="action_change_photo">Ganti Foto</string>
     <string name="action_process_ai">Proses dengan AI</string>
     <string name="scale_factor_title">Rasio Pembesaran</string>
+    <string name="scale_1x">1×</string>
     <string name="scale_1_5x">1.5×</string>
     <string name="scale_2x">2×</string>
     <string name="scale_3x">3×</string>
     <string name="scale_4x">4×</string>
     <string name="scale_8x">8×</string>
+    <string name="scale_16x">16×</string>
+
+    <!-- Deblur Controls -->
+    <string name="deblur_mode_title">Profil Restorasi</string>
+    <string name="deblur_mode_defocus">Defocus / Bokeh</string>
+    <string name="deblur_mode_motion">Guncangan Kamera</string>
+    <string name="deblur_mode_portrait">Potret Lembut</string>
+    <string name="slider_deblur_radius">Radius Blur: %1$d px</string>
+    <string name="slider_deblur_radius_desc">Jangkauan sebaran blur optikal (makin besar makin luas jangkauan)</string>
+    <string name="slider_clarity">Kejernihan &amp; Pemulihan: %1$d%%</string>
+    <string name="slider_clarity_desc">Rekonstruksi kontur tepi &amp; mikrokontras luminansi multi-skala</string>
+    <string name="face_aware_title">Ketajaman Fitur Wajah (Face-Aware)</string>
+    <string name="face_aware_desc">Fokuskan penajaman pada mata &amp; senyuman dengan proteksi kulit</string>
+    <string name="anti_halo_title">Perisai Anti-Halo</string>
+    <string name="anti_halo_desc">Mencegah efek garis putih berpendar di pinggiran kontras tinggi</string>
+
+    <!-- Pro Studio Tabs -->
+    <string name="tab_scale">Skala &amp; Model</string>
+    <string name="tab_deblur">Deblur &amp; Wajah</string>
+    <string name="tab_tuning">Detail &amp; AA</string>
+    <string name="tab_export">Format &amp; Ekspor</string>
+    <string name="format_png">PNG (Lossless Murni)</string>
+    <string name="format_webp">WebP (Kualitas Tinggi)</string>
+    <string name="format_jpeg">JPEG (Ukuran Ringkas)</string>
+    <string name="export_quality_title">Kualitas Kompresi: %1$d%%</string>
 
     <!-- Tuning Controls -->
     <string name="tuning_panel_title">Penyetelan Ketajaman &amp; Anti-Gerigi</string>

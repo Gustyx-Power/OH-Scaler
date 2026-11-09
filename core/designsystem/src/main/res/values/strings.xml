@@ -6,17 +6,18 @@
     <string name="onboard_title_1">100% On-Device &amp; Private</string>
     <string name="onboard_desc_1">Run neural AI models directly on your phone hardware. Zero data sent to cloud servers, no queues, zero tracking.</string>
     <string name="onboard_title_2">Restore Clarity &amp; Deblur</string>
-    <string name="onboard_desc_2">Upscale up to 8× with Real-ESRGAN Compact. Reconstruct fine edges and eliminate pixel staircases with intelligent anti-aliasing.</string>
+    <string name="onboard_desc_2">Upscale up to 16× with Real-ESRGAN Compact. Reconstruct fine edges and eliminate pixel staircases with intelligent anti-aliasing.</string>
     <string name="onboard_title_3">Interactive Studio &amp; Export</string>
     <string name="onboard_desc_3">Fine-tune sharpness in real-time, inspect every pixel with the split comparison slider, and save directly to your gallery.</string>
     <string name="onboard_skip">Skip</string>
     <string name="onboard_next">Continue</string>
     <string name="onboard_start">Get Started</string>
 
-    <!-- Home Hub Screen -->
-    <string name="home_hero_title">Upscale Images with On-Device AI</string>
-    <string name="home_hero_desc">100% private and offline. No subscriptions, no cloud queues, zero ads.</string>
-    <string name="home_dropzone_title">Tap to Pick Photo</string>
+    <!-- Dribbble-Style Hero & Dropzone -->
+    <string name="home_hero_greeting">Studio Quality • On-Device</string>
+    <string name="home_hero_title">Super-Resolution &amp; Deblur Studio</string>
+    <string name="home_hero_desc">100% private and offline on your device. Zero cloud queues, zero subscriptions, zero ads.</string>
+    <string name="home_dropzone_title">Drop or Browse Photo</string>
     <string name="home_dropzone_subtitle">Select any photo to enhance instantly</string>
     <string name="engine_status_active">● AI Engine: Real-ESRGAN Compact (Active)</string>
     <string name="engine_status_loading">○ AI Engine: Initializing…</string>
@@ -47,7 +48,7 @@
 
     <!-- Feature Cards -->
     <string name="tool_super_res_title">AI Super-Resolution</string>
-    <string name="tool_super_res_desc">Enlarge photos up to 8× with neural detail reconstruction and anti-aliasing.</string>
+    <string name="tool_super_res_desc">Enlarge photos up to 16× with neural detail reconstruction and anti-aliasing.</string>
     <string name="tool_deblur_title">Photo Deblur &amp; Restore</string>
     <string name="tool_deblur_desc">Recover micro-edges, contrast, and clarity from camera shake or soft focus.</string>
     <string name="tool_pro_studio_title">Pro Tuning Studio</string>
@@ -55,15 +56,45 @@
 
     <!-- Studio Screen -->
     <string name="studio_title">Editing Studio</string>
+    <string name="studio_super_res_title">AI Super-Resolution Studio</string>
+    <string name="studio_deblur_title">Photo Deblur &amp; Face Restore</string>
+    <string name="studio_pro_title">Pro Creative Workstation</string>
+
     <string name="action_select_image">Select Photo</string>
     <string name="action_change_photo">Change Photo</string>
     <string name="action_process_ai">Process with AI</string>
     <string name="scale_factor_title">Scale Factor</string>
+    <string name="scale_1x">1×</string>
     <string name="scale_1_5x">1.5×</string>
     <string name="scale_2x">2×</string>
     <string name="scale_3x">3×</string>
     <string name="scale_4x">4×</string>
     <string name="scale_8x">8×</string>
+    <string name="scale_16x">16×</string>
+
+    <!-- Deblur Controls -->
+    <string name="deblur_mode_title">Restoration Preset</string>
+    <string name="deblur_mode_defocus">Defocus / Bokeh</string>
+    <string name="deblur_mode_motion">Motion Blur</string>
+    <string name="deblur_mode_portrait">Soft Portrait</string>
+    <string name="slider_deblur_radius">Deblur Radius: %1$d px</string>
+    <string name="slider_deblur_radius_desc">Optical blur spread kernel (larger = catches wider blurs)</string>
+    <string name="slider_clarity">Clarity &amp; Recovery: %1$d%%</string>
+    <string name="slider_clarity_desc">Multi-scale luminance edge &amp; micro-contrast reconstruction</string>
+    <string name="face_aware_title">Face-Aware Portrait Clarity</string>
+    <string name="face_aware_desc">Boost eye &amp; smile definition with skin tone protection</string>
+    <string name="anti_halo_title">Anti-Halo Shield</string>
+    <string name="anti_halo_desc">Suppresses white glowing outlines on high-contrast borders</string>
+
+    <!-- Pro Studio Tabs -->
+    <string name="tab_scale">Scale &amp; Model</string>
+    <string name="tab_deblur">Deblur &amp; Face</string>
+    <string name="tab_tuning">Detail &amp; AA</string>
+    <string name="tab_export">Export &amp; Format</string>
+    <string name="format_png">PNG (Lossless)</string>
+    <string name="format_webp">WebP (High Quality)</string>
+    <string name="format_jpeg">JPEG (Compact)</string>
+    <string name="export_quality_title">Quality: %1$d%%</string>
 
     <!-- Tuning Controls -->
     <string name="tuning_panel_title">Detail &amp; Anti-Aliasing Tuning</string>
