@@ -1,0 +1,35 @@
+<resources>
+    <string name="app_name">OH-Scaler</string>
+    <string name="app_tagline">Super Resolusi Citra AI Offline</string>
+
+    <!-- Home Screen -->
+    <string name="home_hero_title">Tingkatkan Resolusi Foto dengan AI Lokal</string>
+    <string name="home_hero_desc">100% privat dan offline. Tanpa langganan, tanpa antrean cloud, dan tanpa iklan.</string>
+    <string name="action_select_image">Pilih Foto</string>
+    <string name="action_change_photo">Ganti Foto</string>
+    <string name="action_upscale_now">Mulai Upscale</string>
+    <string name="scale_factor_title">Rasio Pembesaran</string>
+    <string name="scale_2x">2× (Seimbang)</string>
+    <string name="scale_4x">4× (Ultra Tajam)</string>
+
+    <!-- Progress Card -->
+    <string name="processing_title">Meningkatkan Resolusi Citra…</string>
+    <string name="processing_subtitle">Memproses ubin secara lokal lewat akselerasi hardware</string>
+    <string name="tile_counter">Ubin %1$d dari %2$d</string>
+    <string name="step_read_pixels">1. Membaca Piksel &amp; EXIF</string>
+    <string name="step_ai_inference">2. Inferensi AI Neural Per Ubin</string>
+    <string name="step_stitching">3. Penggabungan &amp; Penghalusan Batas</string>
+    <string name="step_completed">4. Peningkatan Selesai</string>
+    <string name="action_cancel">Batalkan</string>
+
+    <!-- Result Screen -->
+    <string name="result_title">Pratinjau Komparasi</string>
+    <string name="tag_before">SEBELUM</string>
+    <string name="tag_after">SESUDAH (AI)</string>
+    <string name="desc_drag_slider">Geser horizontal untuk membandingkan</string>
+    <string name="action_save_gallery">Simpan ke Galeri</string>
+    <string name="action_saved">Tersimpan di Pictures/OH-Scaler!</string>
+    <string name="action_save_failed">Gagal menyimpan citra</string>
+    <string name="action_upscale_another">Foto Baru</string>
+    <string name="zoom_hint">Cubit layar untuk perbesar &amp; periksa detail</string>
+</resources>
