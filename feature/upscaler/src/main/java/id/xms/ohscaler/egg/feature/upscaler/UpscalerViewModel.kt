@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import id.xms.ohscaler.egg.core.ai.EnhancementMode
 import id.xms.ohscaler.egg.core.ai.FallbackUpscalerEngine
 import id.xms.ohscaler.egg.core.ai.OnnxUpscalerEngine
+import id.xms.ohscaler.egg.core.ai.TuningConfig
 import id.xms.ohscaler.egg.core.ai.UpscaleProgress
 import id.xms.ohscaler.egg.core.storage.ImageDecoderHelper
 import id.xms.ohscaler.egg.core.storage.ScopedStorageManager
@@ -20,16 +21,41 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+enum class ScreenState {
+    HomeHub,
+    StudioWorkspace,
+    ResultPreview
+}
+
+enum class FeatureMode {
+    SuperResolution,
+    DeblurRestore,
+    ProStudio
+}
+
+enum class TuningPreset {
+    Balanced,
+    SmoothPortrait,
+    CrispGraphic,
+    Custom
+}
+
 data class UpscalerUiState(
+    val currentScreen: ScreenState = ScreenState.HomeHub,
+    val activeFeatureMode: FeatureMode = FeatureMode.SuperResolution,
     val sourceUri: Uri? = null,
     val sourceBitmap: Bitmap? = null,
     val upscaledBitmap: Bitmap? = null,
-    val scaleFactor: Int = 2,
+    val scaleFactor: Float = 2.0f,
+    val sharpness: Float = 0.5f,
+    val antiAliasing: Float = 0.5f,
+    val tuningPreset: TuningPreset = TuningPreset.Balanced,
     val enhancementMode: EnhancementMode = EnhancementMode.Natural,
     val isEngineReady: Boolean = false,
     val progress: UpscaleProgress = UpscaleProgress.Idle,
     val isSaving: Boolean = false,
     val savedUri: Uri? = null,
+    val recentCreations: List<Uri> = emptyList(),
     val errorMessage: String? = null
 )
 
@@ -47,6 +73,7 @@ class UpscalerViewModel(application: Application) : AndroidViewModel(application
 
     init {
         loadModelAsync()
+        loadRecentCreations()
     }
 
     private fun loadModelAsync() {
@@ -69,12 +96,39 @@ class UpscalerViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun loadRecentCreations() {
+        viewModelScope.launch {
+            val recent = storageManager.loadRecentCreations(limit = 10)
+            _uiState.update { it.copy(recentCreations = recent) }
+        }
+    }
+
+    fun selectFeatureMode(mode: FeatureMode) {
+        val (sharpness, antiAliasing, preset) = when (mode) {
+            FeatureMode.SuperResolution -> Triple(0.4f, 0.6f, TuningPreset.Balanced)
+            FeatureMode.DeblurRestore -> Triple(0.85f, 0.3f, TuningPreset.CrispGraphic)
+            FeatureMode.ProStudio -> Triple(0.5f, 0.5f, TuningPreset.Custom)
+        }
+        _uiState.update {
+            it.copy(
+                activeFeatureMode = mode,
+                sharpness = sharpness,
+                antiAliasing = antiAliasing,
+                tuningPreset = preset
+            )
+        }
+    }
+
+    fun navigateToHome() {
+        _uiState.update { it.copy(currentScreen = ScreenState.HomeHub) }
+    }
+
     fun onImageSelected(uri: Uri) {
         android.util.Log.d("OHScaler", "onImageSelected called with: $uri")
         viewModelScope.launch {
             try {
                 val bitmap = ImageDecoderHelper.decodeBitmapFromUri(getApplication(), uri)
-                android.util.Log.d("OHScaler", "Decoded bitmap: $bitmap (width=${bitmap?.width}, height=${bitmap?.height})")
+                android.util.Log.d("OHScaler", "Decoded bitmap: $bitmap (${bitmap?.width}x${bitmap?.height})")
                 _uiState.update {
                     it.copy(
                         sourceUri = uri,
@@ -82,7 +136,8 @@ class UpscalerViewModel(application: Application) : AndroidViewModel(application
                         upscaledBitmap = null,
                         progress = UpscaleProgress.Idle,
                         savedUri = null,
-                        errorMessage = null
+                        errorMessage = null,
+                        currentScreen = ScreenState.StudioWorkspace
                     )
                 }
             } catch (e: Exception) {
@@ -91,27 +146,59 @@ class UpscalerViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun setScaleFactor(scale: Int) {
+    fun setScaleFactor(scale: Float) {
         _uiState.update { it.copy(scaleFactor = scale) }
     }
 
+    fun setScaleFactor(scale: Int) {
+        setScaleFactor(scale.toFloat())
+    }
+
+    fun setSharpness(value: Float) {
+        _uiState.update { it.copy(sharpness = value.coerceIn(0f, 1f), tuningPreset = TuningPreset.Custom) }
+    }
+
+    fun setAntiAliasing(value: Float) {
+        _uiState.update { it.copy(antiAliasing = value.coerceIn(0f, 1f), tuningPreset = TuningPreset.Custom) }
+    }
+
+    fun applyPreset(preset: TuningPreset) {
+        _uiState.update {
+            when (preset) {
+                TuningPreset.Balanced -> it.copy(tuningPreset = preset, sharpness = 0.5f, antiAliasing = 0.5f)
+                TuningPreset.SmoothPortrait -> it.copy(tuningPreset = preset, sharpness = 0.3f, antiAliasing = 0.8f)
+                TuningPreset.CrispGraphic -> it.copy(tuningPreset = preset, sharpness = 0.85f, antiAliasing = 0.3f)
+                TuningPreset.Custom -> it.copy(tuningPreset = preset)
+            }
+        }
+    }
+
     fun setEnhancementMode(mode: EnhancementMode) {
-        _uiState.update { it.copy(enhancementMode = mode) }
+        _uiState.update {
+            val sharpness = if (mode == EnhancementMode.UltraDeblur) 0.85f else 0.4f
+            val aa = if (mode == EnhancementMode.UltraDeblur) 0.3f else 0.6f
+            it.copy(enhancementMode = mode, sharpness = sharpness, antiAliasing = aa)
+        }
     }
 
     fun startUpscale() {
         val bitmap = _uiState.value.sourceBitmap ?: return
-        val scale = _uiState.value.scaleFactor
-        val mode = _uiState.value.enhancementMode
-        android.util.Log.d("OHScaler", "startUpscale CALLED! bitmap=${bitmap.width}x${bitmap.height}, scale=$scale, mode=$mode")
+        val config = TuningConfig(
+            scaleFactor = _uiState.value.scaleFactor,
+            sharpness = _uiState.value.sharpness,
+            antiAliasing = _uiState.value.antiAliasing
+        )
+        android.util.Log.d(
+            "OHScaler",
+            "startUpscale called! bitmap=${bitmap.width}x${bitmap.height}, config=$config"
+        )
 
         upscaleJob?.cancel()
         upscaleJob = viewModelScope.launch {
             try {
                 val result = onnxEngine.upscale(
                     sourceBitmap = bitmap,
-                    scaleFactor = scale,
-                    enhancementMode = mode,
+                    config = config,
                     onProgress = { progress ->
                         _uiState.update { it.copy(progress = progress) }
                     }
@@ -119,7 +206,8 @@ class UpscalerViewModel(application: Application) : AndroidViewModel(application
                 _uiState.update {
                     it.copy(
                         upscaledBitmap = result,
-                        progress = UpscaleProgress.Completed(result, 0)
+                        progress = UpscaleProgress.Completed(result, 0),
+                        currentScreen = ScreenState.ResultPreview
                     )
                 }
             } catch (e: Exception) {
@@ -147,6 +235,9 @@ class UpscalerViewModel(application: Application) : AndroidViewModel(application
                     savedUri = savedUri
                 )
             }
+            if (savedUri != null) {
+                loadRecentCreations()
+            }
             onResult(savedUri != null)
         }
     }
@@ -161,7 +252,8 @@ class UpscalerViewModel(application: Application) : AndroidViewModel(application
                 upscaledBitmap = null,
                 progress = UpscaleProgress.Idle,
                 savedUri = null,
-                errorMessage = null
+                errorMessage = null,
+                currentScreen = ScreenState.HomeHub
             )
         }
     }

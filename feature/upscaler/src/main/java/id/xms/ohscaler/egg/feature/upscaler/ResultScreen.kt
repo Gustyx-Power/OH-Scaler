@@ -52,7 +52,7 @@ import id.xms.ohscaler.egg.core.ui.ResolutionBadge
 fun ResultScreen(
     sourceBitmap: Bitmap,
     upscaledBitmap: Bitmap,
-    scaleFactor: Int,
+    scaleFactor: Float,
     isSaving: Boolean,
     onSave: ((Boolean) -> Unit) -> Unit,
     onReset: () -> Unit,
@@ -206,3 +206,25 @@ fun ResultScreen(
         }
     }
 }
+
+@Composable
+fun ResultScreen(
+    sourceBitmap: Bitmap,
+    upscaledBitmap: Bitmap,
+    scaleFactor: Int,
+    isSaving: Boolean,
+    onSave: ((Boolean) -> Unit) -> Unit,
+    onReset: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    ResultScreen(
+        sourceBitmap = sourceBitmap,
+        upscaledBitmap = upscaledBitmap,
+        scaleFactor = scaleFactor.toFloat(),
+        isSaving = isSaving,
+        onSave = onSave,
+        onReset = onReset,
+        modifier = modifier
+    )
+}
+

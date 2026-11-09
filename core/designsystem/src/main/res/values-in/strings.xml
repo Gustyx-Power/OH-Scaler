@@ -2,17 +2,49 @@
     <string name="app_name">OH-Scaler</string>
     <string name="app_tagline">Super Resolusi Citra AI Offline</string>
 
-    <!-- Home Screen -->
+    <!-- Home Hub Screen -->
     <string name="home_hero_title">Tingkatkan Resolusi Foto dengan AI Lokal</string>
     <string name="home_hero_desc">100% privat dan offline. Tanpa langganan, tanpa antrean cloud, dan tanpa iklan.</string>
     <string name="engine_status_active">● AI Engine: Real-ESRGAN Compact (Aktif)</string>
     <string name="engine_status_loading">○ AI Engine: Menyiapkan…</string>
+    <string name="section_tools">Pilihan Utilitas AI</string>
+    <string name="section_recent">Hasil Terakhir</string>
+    <string name="recent_empty">Belum ada kreasi. Pilih salah satu fitur untuk mulai!</string>
+
+    <!-- Feature Cards -->
+    <string name="tool_super_res_title">AI Super-Resolution</string>
+    <string name="tool_super_res_desc">Perbesar foto mulai 1.5× hingga 8× dengan proteksi anti-aliasing otomatis.</string>
+    <string name="tool_deblur_title">Restorasi &amp; Penajaman Foto</string>
+    <string name="tool_deblur_desc">Pulihkan ketajaman kontur tepi dari keburaman atau guncangan kamera.</string>
+    <string name="tool_pro_studio_title">Pro Tuning Studio</string>
+    <string name="tool_pro_studio_desc">Kendali manual penuh atas skala, ketajaman tepi, dan kelembutan anti-gerigi.</string>
+
+    <!-- Studio Screen -->
+    <string name="studio_title">Studio Penyuntingan</string>
     <string name="action_select_image">Pilih Foto</string>
     <string name="action_change_photo">Ganti Foto</string>
-    <string name="action_upscale_now">Mulai Upscale</string>
+    <string name="action_process_ai">Proses dengan AI</string>
     <string name="scale_factor_title">Rasio Pembesaran</string>
-    <string name="scale_2x">2× (Seimbang)</string>
-    <string name="scale_4x">4× (Ultra Tajam)</string>
+    <string name="scale_1_5x">1.5×</string>
+    <string name="scale_2x">2×</string>
+    <string name="scale_3x">3×</string>
+    <string name="scale_4x">4×</string>
+    <string name="scale_8x">8×</string>
+
+    <!-- Tuning Controls -->
+    <string name="tuning_panel_title">Penyetelan Ketajaman &amp; Anti-Gerigi</string>
+    <string name="preset_title">Profil Cepat</string>
+    <string name="preset_balanced">Seimbang</string>
+    <string name="preset_smooth">Potret Halus</string>
+    <string name="preset_crisp">Grafik Tegas</string>
+    <string name="preset_custom">Kustom</string>
+    <string name="slider_sharpness">Intensitas Ketajaman: %1$d%%</string>
+    <string name="slider_anti_aliasing">Anti-Aliasing (De-Jaggies): %1$d%%</string>
+    <string name="slider_sharpness_desc">Kontras tepi frekuensi tinggi</string>
+    <string name="slider_anti_aliasing_desc">Penghalusan step diagonal agar tidak bergerigi</string>
+
+    <!-- Legacy / Compatibility -->
+    <string name="action_upscale_now">Mulai Upscale</string>
     <string name="enhancement_mode_title">Mode Penajaman &amp; Deblur</string>
     <string name="mode_natural">Alami</string>
     <string name="mode_ultra_deblur">Ultra Deblur</string>

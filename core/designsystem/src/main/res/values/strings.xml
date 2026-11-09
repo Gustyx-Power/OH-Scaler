@@ -2,17 +2,49 @@
     <string name="app_name">OH-Scaler</string>
     <string name="app_tagline">Offline AI Image Super-Resolution</string>
 
-    <!-- Home Screen -->
+    <!-- Home Hub Screen -->
     <string name="home_hero_title">Upscale Images with On-Device AI</string>
     <string name="home_hero_desc">100% private and offline. No subscriptions, no cloud queues, zero ads.</string>
     <string name="engine_status_active">● AI Engine: Real-ESRGAN Compact (Active)</string>
     <string name="engine_status_loading">○ AI Engine: Initializing…</string>
+    <string name="section_tools">AI Image Tools</string>
+    <string name="section_recent">Recent Creations</string>
+    <string name="recent_empty">No creations yet. Select a tool to start upscaling!</string>
+
+    <!-- Feature Cards -->
+    <string name="tool_super_res_title">AI Super-Resolution</string>
+    <string name="tool_super_res_desc">Enlarge photos from 1.5× up to 8× with natural anti-aliasing protection.</string>
+    <string name="tool_deblur_title">Photo Deblur &amp; Restore</string>
+    <string name="tool_deblur_desc">Recover micro-edges, contrast, and clarity from camera shake or soft focus.</string>
+    <string name="tool_pro_studio_title">Pro Tuning Studio</string>
+    <string name="tool_pro_studio_desc">Full manual control over scale, sharpness intensity, and anti-aliasing smoothing.</string>
+
+    <!-- Studio Screen -->
+    <string name="studio_title">Editing Studio</string>
     <string name="action_select_image">Select Photo</string>
     <string name="action_change_photo">Change Photo</string>
-    <string name="action_upscale_now">Upscale Now</string>
+    <string name="action_process_ai">Process with AI</string>
     <string name="scale_factor_title">Scale Factor</string>
-    <string name="scale_2x">2× (Balanced)</string>
-    <string name="scale_4x">4× (Ultra Sharp)</string>
+    <string name="scale_1_5x">1.5×</string>
+    <string name="scale_2x">2×</string>
+    <string name="scale_3x">3×</string>
+    <string name="scale_4x">4×</string>
+    <string name="scale_8x">8×</string>
+
+    <!-- Tuning Controls -->
+    <string name="tuning_panel_title">Detail &amp; Anti-Aliasing Tuning</string>
+    <string name="preset_title">Style Presets</string>
+    <string name="preset_balanced">Balanced</string>
+    <string name="preset_smooth">Smooth Portrait</string>
+    <string name="preset_crisp">Crisp Graphic</string>
+    <string name="preset_custom">Custom</string>
+    <string name="slider_sharpness">Sharpness Intensity: %1$d%%</string>
+    <string name="slider_anti_aliasing">Edge Anti-Aliasing (De-Jaggies): %1$d%%</string>
+    <string name="slider_sharpness_desc">High-frequency edge contrast</string>
+    <string name="slider_anti_aliasing_desc">Directional smoothing for diagonal staircases</string>
+
+    <!-- Legacy / Compatibility -->
+    <string name="action_upscale_now">Upscale Now</string>
     <string name="enhancement_mode_title">Deblur &amp; Detail Mode</string>
     <string name="mode_natural">Natural</string>
     <string name="mode_ultra_deblur">Ultra Deblur</string>
