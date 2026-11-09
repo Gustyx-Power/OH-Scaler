@@ -28,8 +28,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.AutoFixHigh
@@ -53,7 +55,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -119,36 +124,36 @@ fun FullscreenProcessingScreen(
     }
 
     // Resolusi Asli & Target
-    val actualSrcW = if (sourceWidth > 0) sourceWidth else if (progress is UpscaleProgress.ReadingPixels) progress.sourceWidth else 496
-    val actualSrcH = if (sourceHeight > 0) sourceHeight else if (progress is UpscaleProgress.ReadingPixels) progress.sourceHeight else 603
+    val actualSrcW = if (sourceWidth > 0) sourceWidth else if (progress is UpscaleProgress.ReadingPixels) progress.sourceWidth else 2560
+    val actualSrcH = if (sourceHeight > 0) sourceHeight else if (progress is UpscaleProgress.ReadingPixels) progress.sourceHeight else 1920
     val targetW = (actualSrcW * scaleFactor).roundToInt()
     val targetH = (actualSrcH * scaleFactor).roundToInt()
     val scaleLabel = if (scaleFactor % 1f == 0f) "${scaleFactor.toInt()}×" else "${scaleFactor}×"
 
-    // Infinite animations for data flow and pulse glow
+    // Infinite animations for data flow (gentle & relaxed at 3200ms)
     val transition = rememberInfiniteTransition(label = "flowAnimation")
     val flowProgress1 by transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(1400, easing = LinearEasing), RepeatMode.Restart),
+        animationSpec = infiniteRepeatable(tween(3200, easing = LinearEasing), RepeatMode.Restart),
         label = "flowPulse1"
     )
     val flowProgress2 by transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(1400, easing = LinearEasing), RepeatMode.Restart),
+        animationSpec = infiniteRepeatable(tween(3200, easing = LinearEasing), RepeatMode.Restart),
         label = "flowPulse2"
     )
     val hardwareGlow by transition.animateFloat(
-        initialValue = 0.5f,
+        initialValue = 0.4f,
         targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(1000, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        animationSpec = infiniteRepeatable(tween(1100, easing = FastOutSlowInEasing), RepeatMode.Reverse),
         label = "hardwareGlow"
     )
     val shimmerOffset by transition.animateFloat(
-        initialValue = -0.5f,
-        targetValue = 1.5f,
-        animationSpec = infiniteRepeatable(tween(2000, easing = LinearEasing), RepeatMode.Restart),
+        initialValue = -0.4f,
+        targetValue = 1.4f,
+        animationSpec = infiniteRepeatable(tween(2400, easing = LinearEasing), RepeatMode.Restart),
         label = "shimmer"
     )
 
@@ -160,10 +165,12 @@ fun FullscreenProcessingScreen(
         modifier = modifier
             .fillMaxSize()
             .background(bgColor)
-            .padding(horizontal = 20.dp, vertical = 18.dp)
+            .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
@@ -224,13 +231,13 @@ fun FullscreenProcessingScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(10.dp))
+
             // ================================================================
-            // 2. Center Section: Hierarchical Hardware & Data Flow Animation
+            // 2. Center Section: Hierarchical Hardware & Relaxed Data Flow
             // ================================================================
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 10.dp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Top Node: Original Image (Foto Asli)
@@ -299,11 +306,11 @@ fun FullscreenProcessingScreen(
                     }
                 }
 
-                // Fluid Connector 1 (Top -> Middle Hardware Cluster)
+                // Fluid Connector 1 (Top -> Middle Hardware Cluster - Relaxed 3200ms)
                 Canvas(
                     modifier = Modifier
                         .fillMaxWidth(0.92f)
-                        .height(30.dp)
+                        .height(26.dp)
                 ) {
                     val w = size.width
                     val h = size.height
@@ -311,7 +318,6 @@ fun FullscreenProcessingScreen(
                     val startY = 0f
                     val endY = h
 
-                    // 4 target X coordinates corresponding to CPU, GPU, NPU, RAM centers
                     val xTargets = listOf(w * 0.125f, w * 0.375f, w * 0.625f, w * 0.875f)
 
                     xTargets.forEach { endX ->
@@ -330,9 +336,8 @@ fun FullscreenProcessingScreen(
                             style = Stroke(width = 1.5.dp.toPx())
                         )
 
-                        // Animated Photon Pulse
+                        // Slower, smooth photon pulse
                         val t = flowProgress1
-                        // Approximate cubic bezier point
                         val oneMinusT = 1f - t
                         val pX = (oneMinusT * oneMinusT * oneMinusT * startX) +
                                 (3f * oneMinusT * oneMinusT * t * startX) +
@@ -349,7 +354,7 @@ fun FullscreenProcessingScreen(
                             center = Offset(pX, pY)
                         )
                         drawCircle(
-                            color = primaryColor.copy(alpha = 0.35f),
+                            color = primaryColor.copy(alpha = 0.25f),
                             radius = 7.dp.toPx(),
                             center = Offset(pX, pY)
                         )
@@ -364,7 +369,7 @@ fun FullscreenProcessingScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 6.dp),
+                            .padding(bottom = 5.dp),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -377,7 +382,7 @@ fun FullscreenProcessingScreen(
                         Spacer(modifier = Modifier.width(5.dp))
                         Text(
                             text = "HETEROGENEOUS AI CORE ACCELERATION",
-                            fontSize = 10.sp,
+                            fontSize = 9.5.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF94A3B8),
                             letterSpacing = 0.6.sp
@@ -389,7 +394,6 @@ fun FullscreenProcessingScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        // CPU
                         HardwareNodeCard(
                             name = "CPU",
                             role = "ARM NEON",
@@ -401,7 +405,6 @@ fun FullscreenProcessingScreen(
                             modifier = Modifier.weight(1f)
                         )
 
-                        // GPU
                         HardwareNodeCard(
                             name = "GPU",
                             role = "Vulkan Ops",
@@ -413,7 +416,6 @@ fun FullscreenProcessingScreen(
                             modifier = Modifier.weight(1f)
                         )
 
-                        // NPU
                         HardwareNodeCard(
                             name = "NPU",
                             role = "Neural Core",
@@ -425,7 +427,6 @@ fun FullscreenProcessingScreen(
                             modifier = Modifier.weight(1f)
                         )
 
-                        // RAM
                         HardwareNodeCard(
                             name = "RAM",
                             role = "Zero-OOM",
@@ -439,11 +440,11 @@ fun FullscreenProcessingScreen(
                     }
                 }
 
-                // Fluid Connector 2 (Middle Hardware Cluster -> Target Output Node)
+                // Fluid Connector 2 (Middle Hardware Cluster -> Target Output Node - Relaxed 3200ms)
                 Canvas(
                     modifier = Modifier
                         .fillMaxWidth(0.92f)
-                        .height(30.dp)
+                        .height(26.dp)
                 ) {
                     val w = size.width
                     val h = size.height
@@ -469,7 +470,7 @@ fun FullscreenProcessingScreen(
                             style = Stroke(width = 1.5.dp.toPx())
                         )
 
-                        // Animated Photon Pulse
+                        // Slower, smooth photon pulse
                         val t = flowProgress2
                         val oneMinusT = 1f - t
                         val pX = (oneMinusT * oneMinusT * oneMinusT * startX) +
@@ -487,14 +488,14 @@ fun FullscreenProcessingScreen(
                             center = Offset(pX, pY)
                         )
                         drawCircle(
-                            color = secondaryColor.copy(alpha = 0.35f),
+                            color = secondaryColor.copy(alpha = 0.25f),
                             radius = 7.dp.toPx(),
                             center = Offset(pX, pY)
                         )
                     }
                 }
 
-                // Bottom Node: Target Image (Hasil AI)
+                // Bottom Node: Target Resolution (NO "Hasil AI" wording)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(0.92f)
@@ -521,14 +522,14 @@ fun FullscreenProcessingScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Rounded.AutoFixHigh,
-                                    contentDescription = "Hasil AI",
+                                    contentDescription = "Target Resolusi",
                                     tint = secondaryColor,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
                             Column {
                                 Text(
-                                    text = "HASIL AI ($scaleLabel)",
+                                    text = "TARGET RESOLUSI ($scaleLabel)",
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = secondaryColor,
@@ -564,8 +565,22 @@ fun FullscreenProcessingScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(14.dp))
+
             // ================================================================
-            // 3. Lower Section: Modified Material Capsule Progress Bar
+            // 3. GitHub Contribution Tile Matrix (Block-by-Block Tile Completion)
+            // ================================================================
+            TileContributionMatrix(
+                currentTile = currentTile,
+                totalTiles = totalTiles,
+                activeGlow = hardwareGlow,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // ================================================================
+            // 4. Sturdy Pill Material Progress Bar & Metrics
             // ================================================================
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -605,15 +620,15 @@ fun FullscreenProcessingScreen(
                     // Bold Percentage
                     Text(
                         text = "${(progressFraction * 100).roundToInt()}%",
-                        fontSize = 17.sp,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = primaryColor
+                        color = Color.White
                     )
                 }
 
-                // Custom Capsule Material Progress Bar
+                // Sturdy Big Pill Progress Bar (28dp height, 3D specular highlight, bold shimmer)
                 val animatedProgress by animateFloatAsState(
-                    targetValue = progressFraction.coerceIn(0.03f, 1f),
+                    targetValue = progressFraction.coerceIn(0.04f, 1f),
                     animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioNoBouncy),
                     label = "capsuleProgress"
                 )
@@ -621,12 +636,12 @@ fun FullscreenProcessingScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(20.dp)
+                        .height(28.dp)
                         .clip(CircleShape)
-                        .background(Color(0x2B1E293B))
-                        .border(1.dp, Color(0x2EFFFFFF), CircleShape)
+                        .background(Color(0xFF0F172A))
+                        .border(1.5.dp, Color(0x4038BDF8), CircleShape)
                 ) {
-                    // Filled Gradient Bar
+                    // Filled Vibrant Gradient Bar
                     Box(
                         modifier = Modifier
                             .fillMaxWidth(animatedProgress)
@@ -635,22 +650,37 @@ fun FullscreenProcessingScreen(
                             .background(
                                 Brush.horizontalGradient(
                                     listOf(
-                                        Color(0xFF06B6D4), // Cyan
-                                        Color(0xFF6366F1), // Indigo
-                                        Color(0xFFEC4899)  // Pink
+                                        Color(0xFF06B6D4), // Radiant Cyan
+                                        Color(0xFF3B82F6), // Royal Blue
+                                        Color(0xFF8B5CF6), // Purple
+                                        Color(0xFFEC4899)  // Hot Pink
                                     )
                                 )
                             )
                     ) {
-                        // Fluid Shimmer Light Beam Pass
+                        // Sturdy Shimmer Light Beam + 3D Glass Specular Highlight
                         Canvas(modifier = Modifier.fillMaxSize()) {
-                            val beamWidth = size.width * 0.4f
+                            // Top 3D glossy edge line
+                            drawLine(
+                                color = Color.White.copy(alpha = 0.45f),
+                                start = Offset(8.dp.toPx(), 3.5.dp.toPx()),
+                                end = Offset(size.width - 8.dp.toPx(), 3.5.dp.toPx()),
+                                strokeWidth = 1.2.dp.toPx(),
+                                cap = StrokeCap.Round
+                            )
+
+                            // Bold Solid Shimmer Beam
+                            val beamWidth = size.width * 0.35f
                             val beamX = size.width * shimmerOffset
                             drawRect(
                                 brush = Brush.horizontalGradient(
                                     colors = listOf(
                                         Color.Transparent,
-                                        Color.White.copy(alpha = 0.4f),
+                                        Color.White.copy(alpha = 0.2f),
+                                        Color.White.copy(alpha = 0.85f),
+                                        Color.White.copy(alpha = 0.95f),
+                                        Color.White.copy(alpha = 0.85f),
+                                        Color.White.copy(alpha = 0.2f),
                                         Color.Transparent
                                     ),
                                     startX = beamX - beamWidth / 2f,
@@ -659,14 +689,15 @@ fun FullscreenProcessingScreen(
                             )
                         }
 
-                        // Leading Head Glow Dot
+                        // Prominent Leading Head Glow Dot
                         Box(
                             modifier = Modifier
-                                .size(12.dp)
+                                .size(16.dp)
                                 .align(Alignment.CenterEnd)
-                                .padding(end = 4.dp)
+                                .padding(end = 5.dp)
                                 .clip(CircleShape)
                                 .background(Color.White)
+                                .border(2.dp, Color(0xFF22D3EE), CircleShape)
                         )
                     }
                 }
@@ -714,8 +745,10 @@ fun FullscreenProcessingScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(14.dp))
+
             // ================================================================
-            // 4. Bottom Section: Cancel Processing Pill Button
+            // 5. Bottom Section: Cancel Processing Pill Button
             // ================================================================
             Box(
                 modifier = Modifier
@@ -749,6 +782,141 @@ fun FullscreenProcessingScreen(
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFFCBD5E1)
                     )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+}
+
+@Composable
+private fun TileContributionMatrix(
+    currentTile: Int,
+    totalTiles: Int,
+    activeGlow: Float,
+    modifier: Modifier = Modifier
+) {
+    val displayTotal = totalTiles.coerceAtLeast(1)
+    val displayCurrent = currentTile.coerceIn(0, displayTotal)
+
+    // Calculate grid dimensions matching GitHub commit heatmap style
+    val cols = if (displayTotal <= 32) 10 else if (displayTotal <= 60) 15 else 20
+    val rows = ((displayTotal + cols - 1) / cols).coerceIn(2, 5)
+    val totalCells = cols * rows
+
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0x241E293B))
+            .border(1.dp, Color(0x2EFFFFFF), RoundedCornerShape(16.dp))
+            .padding(horizontal = 14.dp, vertical = 10.dp)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Header Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.GridView,
+                        contentDescription = null,
+                        tint = Color(0xFF10B981),
+                        modifier = Modifier.size(13.dp)
+                    )
+                    Text(
+                        text = "TILE CONTRIBUTION MATRIX",
+                        fontSize = 9.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF94A3B8),
+                        letterSpacing = 0.6.sp
+                    )
+                }
+
+                Text(
+                    text = "$displayCurrent / $displayTotal petak selesai",
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF10B981)
+                )
+            }
+
+            // GitHub Commit Blocks Canvas
+            Canvas(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height((rows * 10 + (rows - 1) * 3).dp)
+            ) {
+                val availableW = size.width
+                val gap = 3.dp.toPx()
+                val cellSize = (availableW - (cols - 1) * gap) / cols
+                val cornerRadius = CornerRadius(2.2.dp.toPx(), 2.2.dp.toPx())
+
+                for (idx in 0 until totalCells) {
+                    val r = idx / cols
+                    val c = idx % cols
+                    val x = c * (cellSize + gap)
+                    val y = r * (cellSize + gap)
+                    val cellRect = Rect(Offset(x, y), Size(cellSize, cellSize))
+
+                    if (idx < displayTotal) {
+                        when {
+                            idx < displayCurrent -> {
+                                // Completed tile: GitHub style vibrant emerald block
+                                drawRoundRect(
+                                    color = Color(0xFF10B981),
+                                    topLeft = cellRect.topLeft,
+                                    size = cellRect.size,
+                                    cornerRadius = cornerRadius
+                                )
+                                drawRoundRect(
+                                    color = Color(0xFF34D399),
+                                    topLeft = cellRect.topLeft,
+                                    size = cellRect.size,
+                                    cornerRadius = cornerRadius,
+                                    style = Stroke(width = 0.8.dp.toPx())
+                                )
+                            }
+                            idx == displayCurrent -> {
+                                // In-progress tile: Glowing pulsating amber block
+                                val pulseColor = Color(0xFFFBBF24)
+                                drawRoundRect(
+                                    color = pulseColor.copy(alpha = 0.35f + 0.45f * activeGlow),
+                                    topLeft = cellRect.topLeft,
+                                    size = cellRect.size,
+                                    cornerRadius = cornerRadius
+                                )
+                                drawRoundRect(
+                                    color = pulseColor,
+                                    topLeft = cellRect.topLeft,
+                                    size = cellRect.size,
+                                    cornerRadius = cornerRadius,
+                                    style = Stroke(width = 1.2.dp.toPx())
+                                )
+                            }
+                            else -> {
+                                // Pending tile: Empty hollow dark square
+                                drawRoundRect(
+                                    color = Color(0x1A334155),
+                                    topLeft = cellRect.topLeft,
+                                    size = cellRect.size,
+                                    cornerRadius = cornerRadius
+                                )
+                                drawRoundRect(
+                                    color = Color(0x26FFFFFF),
+                                    topLeft = cellRect.topLeft,
+                                    size = cellRect.size,
+                                    cornerRadius = cornerRadius,
+                                    style = Stroke(width = 0.8.dp.toPx())
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
