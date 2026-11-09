@@ -1,0 +1,11 @@
+feature,area,priority,original_status,clone_status,notes
+Offline AI Super-Resolution,core-ai,must,subscription_required,implemented,Runs 100% locally via ONNX Runtime & NNAPI
+Tile-based Chunking with Overlap,core-ai,must,proprietary,implemented,Prevents OOM and seam boundary artifacts
+Zero Storage Permissions,core-storage,must,requests_all_files,implemented,Android 12+ Photo Picker & Scoped Storage MediaStore
+Interactive Split-Screen Slider,core-ui,must,static_view,implemented,60 FPS gesture dragging with 48dp handle & haptic feedback
+Animated Step Progress Card,core-ui,must,generic_spinner,implemented,Pulsing real-time stage & tile tracker
+Bilingual Localization (ID & EN),core-ui,should,en_only,implemented,Indonesian & English resource catalogs
+Synchronized Zoom & Pan,core-ui,should,partial,implemented,Dual-viewport synchronized inspection
+Resolution Comparison Badge,core-ui,should,none,implemented,Displays exact source vs target pixel metrics
+High-Precision Fallback Engine,core-ai,must,fails_offline,implemented,Interpolation fallback if NN weights uninitialized
+Save to Gallery (Pictures/OH-Scaler),core-storage,must,watermarked,implemented,Full resolution lossless PNG/JPEG output
