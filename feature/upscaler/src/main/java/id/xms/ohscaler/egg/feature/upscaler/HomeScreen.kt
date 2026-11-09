@@ -88,23 +88,77 @@ fun HomeScreen(
                 }
 
                 ScreenState.StudioWorkspace -> {
-                    if (uiState.sourceBitmap != null) {
-                        StudioScreen(
-                            sourceBitmap = uiState.sourceBitmap!!,
-                            uiState = uiState,
-                            onNavigateBack = { viewModel.navigateToHome() },
-                            onScaleChange = { viewModel.setScaleFactor(it) },
-                            onSharpnessChange = { viewModel.setSharpness(it) },
-                            onAntiAliasingChange = { viewModel.setAntiAliasing(it) },
-                            onPresetChange = { viewModel.applyPreset(it) },
-                            onStartUpscale = { viewModel.startUpscale() },
-                            onSelectNewImage = {
-                                photoPickerLauncher.launch(
-                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    val bitmap = uiState.sourceBitmap
+                    if (bitmap != null) {
+                        when (uiState.activeFeatureMode) {
+                            FeatureMode.SuperResolution -> {
+                                SuperResStudioScreen(
+                                    sourceBitmap = bitmap,
+                                    uiState = uiState,
+                                    onNavigateBack = { viewModel.navigateToHome() },
+                                    onScaleChange = { viewModel.setScaleFactor(it) },
+                                    onSharpnessChange = { viewModel.setSharpness(it) },
+                                    onAntiAliasingChange = { viewModel.setAntiAliasing(it) },
+                                    onPresetChange = { viewModel.applyPreset(it) },
+                                    onStartUpscale = { viewModel.startUpscale() },
+                                    onSelectNewImage = {
+                                        photoPickerLauncher.launch(
+                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                        )
+                                    },
+                                    isDarkTheme = isDarkTheme
                                 )
-                            },
-                            isDarkTheme = isDarkTheme
-                        )
+                            }
+                            FeatureMode.DeblurRestore -> {
+                                DeblurStudioScreen(
+                                    sourceBitmap = bitmap,
+                                    uiState = uiState,
+                                    onNavigateBack = { viewModel.navigateToHome() },
+                                    onScaleChange = { viewModel.setScaleFactor(it) },
+                                    onDeblurRadiusChange = { viewModel.setDeblurRadius(it) },
+                                    onClarityStrengthChange = { viewModel.setClarityStrength(it) },
+                                    onDeblurPresetChange = { viewModel.applyDeblurPreset(it) },
+                                    onFaceAwareToggle = { viewModel.setFaceAwareEnabled(it) },
+                                    onAntiHaloToggle = { enabled ->
+                                        viewModel.setAntiHaloClamp(if (enabled) 30f else 255f)
+                                    },
+                                    onStartUpscale = { viewModel.startUpscale() },
+                                    onSelectNewImage = {
+                                        photoPickerLauncher.launch(
+                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                        )
+                                    },
+                                    isDarkTheme = isDarkTheme
+                                )
+                            }
+                            FeatureMode.ProStudio -> {
+                                ProStudioScreen(
+                                    sourceBitmap = bitmap,
+                                    uiState = uiState,
+                                    onNavigateBack = { viewModel.navigateToHome() },
+                                    onScaleChange = { viewModel.setScaleFactor(it) },
+                                    onSharpnessChange = { viewModel.setSharpness(it) },
+                                    onAntiAliasingChange = { viewModel.setAntiAliasing(it) },
+                                    onPresetChange = { viewModel.applyPreset(it) },
+                                    onDeblurRadiusChange = { viewModel.setDeblurRadius(it) },
+                                    onClarityStrengthChange = { viewModel.setClarityStrength(it) },
+                                    onFaceAwareToggle = { viewModel.setFaceAwareEnabled(it) },
+                                    onAntiHaloToggle = { enabled ->
+                                        viewModel.setAntiHaloClamp(if (enabled) 30f else 255f)
+                                    },
+                                    onExportFormatChange = { viewModel.setExportFormat(it) },
+                                    onExportQualityChange = { viewModel.setExportQuality(it) },
+                                    onTabChange = { viewModel.setProStudioTab(it) },
+                                    onStartUpscale = { viewModel.startUpscale() },
+                                    onSelectNewImage = {
+                                        photoPickerLauncher.launch(
+                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                        )
+                                    },
+                                    isDarkTheme = isDarkTheme
+                                )
+                            }
+                        }
                     } else {
                         viewModel.navigateToHome()
                     }
