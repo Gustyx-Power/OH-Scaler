@@ -8,9 +8,11 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -20,13 +22,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import id.xms.ohscaler.egg.core.ai.UpscaleProgress
-import id.xms.ohscaler.egg.core.designsystem.ObsidianBlack
 import id.xms.ohscaler.egg.core.ui.ProcessingProgressCard
 
 @Composable
 fun HomeScreen(
     viewModel: UpscalerViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isDarkTheme: Boolean = isSystemInDarkTheme()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -44,16 +46,16 @@ fun HomeScreen(
             uiState.progress is UpscaleProgress.Stitching
 
     // Handle system back navigation gracefully
-    BackHandler(enabled = uiState.currentScreen != ScreenState.HomeHub) {
+    BackHandler(enabled = uiState.currentScreen != ScreenState.HomeHub && uiState.currentScreen != ScreenState.Onboarding) {
         when (uiState.currentScreen) {
             ScreenState.ResultPreview -> viewModel.navigateToHome()
             ScreenState.StudioWorkspace -> viewModel.navigateToHome()
-            ScreenState.HomeHub -> Unit
+            else -> Unit
         }
     }
 
     Scaffold(
-        containerColor = ObsidianBlack,
+        containerColor = MaterialTheme.colorScheme.background,
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
         Box(
@@ -61,40 +63,54 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            when {
-                uiState.currentScreen == ScreenState.ResultPreview &&
-                        uiState.upscaledBitmap != null &&
-                        uiState.sourceBitmap != null -> {
-                    ResultScreen(
-                        sourceBitmap = uiState.sourceBitmap!!,
-                        upscaledBitmap = uiState.upscaledBitmap!!,
-                        scaleFactor = uiState.scaleFactor,
-                        isSaving = uiState.isSaving,
-                        onSave = { onDone -> viewModel.saveUpscaledImage(onDone) },
-                        onReset = { viewModel.reset() }
+            when (uiState.currentScreen) {
+                ScreenState.Onboarding -> {
+                    OnboardingScreen(
+                        onComplete = { viewModel.completeOnboarding() },
+                        isDarkTheme = isDarkTheme
                     )
                 }
 
-                uiState.currentScreen == ScreenState.StudioWorkspace &&
-                        uiState.sourceBitmap != null -> {
-                    StudioScreen(
-                        sourceBitmap = uiState.sourceBitmap!!,
-                        uiState = uiState,
-                        onNavigateBack = { viewModel.navigateToHome() },
-                        onScaleChange = { viewModel.setScaleFactor(it) },
-                        onSharpnessChange = { viewModel.setSharpness(it) },
-                        onAntiAliasingChange = { viewModel.setAntiAliasing(it) },
-                        onPresetChange = { viewModel.applyPreset(it) },
-                        onStartUpscale = { viewModel.startUpscale() },
-                        onSelectNewImage = {
-                            photoPickerLauncher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                            )
-                        }
-                    )
+                ScreenState.ResultPreview -> {
+                    if (uiState.upscaledBitmap != null && uiState.sourceBitmap != null) {
+                        ResultScreen(
+                            sourceBitmap = uiState.sourceBitmap!!,
+                            upscaledBitmap = uiState.upscaledBitmap!!,
+                            scaleFactor = uiState.scaleFactor,
+                            isSaving = uiState.isSaving,
+                            onSave = { onDone -> viewModel.saveUpscaledImage(onDone) },
+                            onReset = { viewModel.reset() },
+                            isDarkTheme = isDarkTheme
+                        )
+                    } else {
+                        viewModel.navigateToHome()
+                    }
                 }
 
-                else -> {
+                ScreenState.StudioWorkspace -> {
+                    if (uiState.sourceBitmap != null) {
+                        StudioScreen(
+                            sourceBitmap = uiState.sourceBitmap!!,
+                            uiState = uiState,
+                            onNavigateBack = { viewModel.navigateToHome() },
+                            onScaleChange = { viewModel.setScaleFactor(it) },
+                            onSharpnessChange = { viewModel.setSharpness(it) },
+                            onAntiAliasingChange = { viewModel.setAntiAliasing(it) },
+                            onPresetChange = { viewModel.applyPreset(it) },
+                            onStartUpscale = { viewModel.startUpscale() },
+                            onSelectNewImage = {
+                                photoPickerLauncher.launch(
+                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                )
+                            },
+                            isDarkTheme = isDarkTheme
+                        )
+                    } else {
+                        viewModel.navigateToHome()
+                    }
+                }
+
+                ScreenState.HomeHub -> {
                     HomeHubScreen(
                         uiState = uiState,
                         onSelectFeature = { feature ->
@@ -103,9 +119,22 @@ fun HomeScreen(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                             )
                         },
+                        onQuickPick = {
+                            viewModel.selectFeatureMode(FeatureMode.SuperResolution)
+                            photoPickerLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        },
                         onSelectRecent = { uri ->
                             viewModel.onImageSelected(uri)
-                        }
+                        },
+                        onOpenTutorial = {
+                            viewModel.reopenOnboarding()
+                        },
+                        onToggleTheme = {
+                            viewModel.toggleTheme()
+                        },
+                        isDarkTheme = isDarkTheme
                     )
                 }
             }
@@ -119,13 +148,14 @@ fun HomeScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color(0xDD0D0F17))
+                        .background(Color(if (isDarkTheme) 0xDD090C15 else 0xCCF8F7FB))
                         .padding(24.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     ProcessingProgressCard(
                         progress = uiState.progress,
-                        onCancel = { viewModel.cancelUpscale() }
+                        onCancel = { viewModel.cancelUpscale() },
+                        isDarkTheme = isDarkTheme
                     )
                 }
             }
