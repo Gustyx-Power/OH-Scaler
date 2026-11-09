@@ -18,10 +18,12 @@ class FallbackUpscalerEngine(
 ) : UpscalerEngine {
 
     override val name: String = "High-Precision Interpolation (Bicubic Fallback)"
+    override val isNeuralActive: Boolean = false
 
     override suspend fun upscale(
         sourceBitmap: Bitmap,
         scaleFactor: Int,
+        enhancementMode: EnhancementMode,
         onProgress: (UpscaleProgress) -> Unit
     ): Bitmap = withContext(Dispatchers.Default) {
         val startTime = System.currentTimeMillis()
@@ -36,7 +38,6 @@ class FallbackUpscalerEngine(
                 onProgress(UpscaleProgress.Processing(current, total, progress))
             },
             transformTile = { tile ->
-                // Simulate slight computation delay to allow progress UI visualization if tiny image
                 val outW = tile.width * scaleFactor
                 val outH = tile.height * scaleFactor
                 val scaledTile = Bitmap.createBitmap(outW, outH, Bitmap.Config.ARGB_8888)
@@ -47,7 +48,15 @@ class FallbackUpscalerEngine(
                 val dstRect = Rect(0, 0, outW, outH)
                 canvas.drawBitmap(tile, srcRect, dstRect, paint)
 
-                scaledTile
+                if (enhancementMode == EnhancementMode.UltraDeblur) {
+                    val enhanced = ImageEnhancer.applyAdaptiveDeblur(scaledTile)
+                    if (enhanced != scaledTile && !scaledTile.isRecycled) {
+                        scaledTile.recycle()
+                    }
+                    enhanced
+                } else {
+                    scaledTile
+                }
             }
         )
 

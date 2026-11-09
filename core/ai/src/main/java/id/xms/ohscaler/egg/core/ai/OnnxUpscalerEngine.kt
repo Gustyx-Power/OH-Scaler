@@ -4,7 +4,6 @@ import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import android.graphics.Bitmap
-import android.graphics.Color
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
@@ -12,16 +11,19 @@ import java.nio.FloatBuffer
 import kotlin.coroutines.coroutineContext
 
 /**
- * OnnxUpscalerEngine runs super-resolution models (e.g. Real-ESRGAN Compact / ESRCNN)
+ * OnnxUpscalerEngine runs super-resolution models (e.g. Real-ESRGAN Compact v3)
  * on Android hardware accelerators via ONNX Runtime Mobile and NNAPI / CPU XNNPACK.
  */
 class OnnxUpscalerEngine(
-    private val modelBytes: ByteArray? = null,
+    private var modelBytes: ByteArray? = null,
     private val tileProcessor: TileProcessor = TileProcessor(tileSize = 256, overlapPadding = 16),
     private val fallbackEngine: FallbackUpscalerEngine = FallbackUpscalerEngine(tileProcessor)
 ) : UpscalerEngine {
 
-    override val name: String = "ONNX Neural Super-Resolution (Real-ESRGAN / NNAPI)"
+    override val name: String = "ONNX Neural Super-Resolution (Real-ESRGAN Compact v3)"
+
+    override val isNeuralActive: Boolean
+        get() = ortSession != null
 
     private var ortEnv: OrtEnvironment? = null
     private var ortSession: OrtSession? = null
@@ -30,40 +32,56 @@ class OnnxUpscalerEngine(
         initSession()
     }
 
-    private fun initSession() {
-        if (modelBytes == null || modelBytes.isEmpty()) return
-        try {
+    @Synchronized
+    fun loadModel(bytes: ByteArray): Boolean {
+        this.modelBytes = bytes
+        closeSession()
+        return initSession()
+    }
+
+    private fun initSession(): Boolean {
+        val bytes = modelBytes ?: return false
+        if (bytes.isEmpty()) return false
+        return try {
             val env = OrtEnvironment.getEnvironment()
             val options = OrtSession.SessionOptions().apply {
-                try {
-                    addNnapi()
-                } catch (_: Exception) {
-                    // NNAPI not available on some emulators, fallback to CPU
-                }
                 setIntraOpNumThreads(4)
                 setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
             }
             ortEnv = env
-            ortSession = env.createSession(modelBytes, options)
-        } catch (_: Exception) {
-            ortSession = null
+            ortSession = env.createSession(bytes, options)
+            android.util.Log.d("OHScaler", "ONNX Session created successfully (Multi-thread CPU/NEON/AVX2).")
+            true
+        } catch (e: Exception) {
+            android.util.Log.e("OHScaler", "Failed to create ONNX session", e)
+            closeSession()
+            false
         }
+    }
+
+    private fun closeSession() {
+        try {
+            ortSession?.close()
+        } catch (_: Exception) {}
+        ortSession = null
     }
 
     override suspend fun upscale(
         sourceBitmap: Bitmap,
         scaleFactor: Int,
+        enhancementMode: EnhancementMode,
         onProgress: (UpscaleProgress) -> Unit
     ): Bitmap = withContext(Dispatchers.Default) {
         val session = ortSession
         val env = ortEnv
 
         if (session == null || env == null) {
-            // Gracefully use high-precision fallback engine if model is not yet loaded
-            return@withContext fallbackEngine.upscale(sourceBitmap, scaleFactor, onProgress)
+            // Gracefully use fallback engine if model is not yet loaded
+            return@withContext fallbackEngine.upscale(sourceBitmap, scaleFactor, enhancementMode, onProgress)
         }
 
         val startTime = System.currentTimeMillis()
+        android.util.Log.d("OHScaler", "OnnxUpscalerEngine.upscale starting! ${sourceBitmap.width}x${sourceBitmap.height}, scale=$scaleFactor, mode=$enhancementMode")
         onProgress(UpscaleProgress.ReadingPixels(sourceBitmap.width, sourceBitmap.height))
 
         try {
@@ -71,21 +89,24 @@ class OnnxUpscalerEngine(
                 sourceBitmap = sourceBitmap,
                 scaleFactor = scaleFactor,
                 onProgress = { current, total, progress ->
+                    android.util.Log.d("OHScaler", "Tile progress: $current/$total ($progress)")
                     onProgress(UpscaleProgress.Processing(current, total, progress))
                 },
                 transformTile = { tile ->
                     coroutineContext.ensureActive()
-                    runTileInference(env, session, tile, scaleFactor)
+                    runTileInference(env, session, tile, scaleFactor, enhancementMode)
                 }
             )
 
             onProgress(UpscaleProgress.Stitching(1.0f))
             val duration = System.currentTimeMillis() - startTime
+            android.util.Log.d("OHScaler", "Neural upscale COMPLETED in ${duration}ms! Result: ${result.width}x${result.height}")
             onProgress(UpscaleProgress.Completed(result, duration))
             result
         } catch (e: Exception) {
-            onProgress(UpscaleProgress.Error("Inference failed: ${e.localizedMessage}", e))
-            fallbackEngine.upscale(sourceBitmap, scaleFactor, onProgress)
+            android.util.Log.e("OHScaler", "Neural inference failed, falling back to bicubic", e)
+            onProgress(UpscaleProgress.Error("Neural inference fallback: ${e.localizedMessage}", e))
+            fallbackEngine.upscale(sourceBitmap, scaleFactor, enhancementMode, onProgress)
         }
     }
 
@@ -93,28 +114,30 @@ class OnnxUpscalerEngine(
         env: OrtEnvironment,
         session: OrtSession,
         tile: Bitmap,
-        scaleFactor: Int
+        scaleFactor: Int,
+        enhancementMode: EnhancementMode
     ): Bitmap {
         val w = tile.width
         val h = tile.height
         val pixels = IntArray(w * h)
         tile.getPixels(pixels, 0, w, 0, 0, w, h)
 
-        // Convert to NCHW float tensor [1, 3, H, W]
-        val floatBuffer = FloatBuffer.allocate(1 * 3 * h * w)
+        // Convert to NCHW float tensor [1, 3, H, W] in [0.0, 1.0]
         val channelSize = h * w
+        val floatBuffer = FloatBuffer.allocate(1 * 3 * channelSize)
+        val array = floatBuffer.array()
 
         val rOffset = 0
         val gOffset = channelSize
         val bOffset = 2 * channelSize
 
-        val array = floatBuffer.array()
         for (i in 0 until channelSize) {
-            val pixel = pixels[i]
-            array[rOffset + i] = Color.red(pixel) / 255.0f
-            array[gOffset + i] = Color.green(pixel) / 255.0f
-            array[bOffset + i] = Color.blue(pixel) / 255.0f
+            val p = pixels[i]
+            array[rOffset + i] = ((p shr 16) and 0xFF) / 255.0f
+            array[gOffset + i] = ((p shr 8) and 0xFF) / 255.0f
+            array[bOffset + i] = (p and 0xFF) / 255.0f
         }
+        floatBuffer.rewind()
 
         val inputShape = longArrayOf(1, 3, h.toLong(), w.toLong())
         val inputTensor = OnnxTensor.createTensor(env, floatBuffer, inputShape)
@@ -133,8 +156,8 @@ class OnnxUpscalerEngine(
         outBuffer.get(outArray)
         results.close()
 
-        val outPixels = IntArray(outW * outH)
         val outChannelSize = outW * outH
+        val outPixels = IntArray(outChannelSize)
         val outROffset = 0
         val outGOffset = outChannelSize
         val outBOffset = 2 * outChannelSize
@@ -143,11 +166,34 @@ class OnnxUpscalerEngine(
             val r = (outArray[outROffset + i].coerceIn(0f, 1f) * 255f).toInt()
             val g = (outArray[outGOffset + i].coerceIn(0f, 1f) * 255f).toInt()
             val b = (outArray[outBOffset + i].coerceIn(0f, 1f) * 255f).toInt()
-            outPixels[i] = (0xFF shl 24) or (r shl 16) or (g shl 8) or b
+            outPixels[i] = -0x1000000 or (r shl 16) or (g shl 8) or b
         }
 
-        val outBitmap = Bitmap.createBitmap(outW, outH, Bitmap.Config.ARGB_8888)
-        outBitmap.setPixels(outPixels, 0, outW, 0, 0, outW, outH)
-        return outBitmap
+        val rawTile4x = Bitmap.createBitmap(outW, outH, Bitmap.Config.ARGB_8888)
+        rawTile4x.setPixels(outPixels, 0, outW, 0, 0, outW, outH)
+
+        // If target scale factor is 2x, downsample the 4x neural output for exceptional anti-aliasing
+        val targetTile = if (scaleFactor == 2) {
+            val targetW = w * 2
+            val targetH = h * 2
+            val scaled = Bitmap.createScaledBitmap(rawTile4x, targetW, targetH, true)
+            if (scaled != rawTile4x && !rawTile4x.isRecycled) {
+                rawTile4x.recycle()
+            }
+            scaled
+        } else {
+            rawTile4x
+        }
+
+        // Apply adaptive edge deblurring if requested for out-of-focus or blurry input
+        return if (enhancementMode == EnhancementMode.UltraDeblur) {
+            val enhanced = ImageEnhancer.applyAdaptiveDeblur(targetTile)
+            if (enhanced != targetTile && !targetTile.isRecycled) {
+                targetTile.recycle()
+            }
+            enhanced
+        } else {
+            targetTile
+        }
     }
 }
